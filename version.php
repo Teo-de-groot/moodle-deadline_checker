@@ -24,6 +24,6 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2017011300;        // The current plugin version (Date: YYYYMMDDXX)
-$plugin->requires  = 2012112900;        // Requires this Moodle version
+$plugin->version   = 2026072901;        // The current plugin version (Date: YYYYMMDDXX)
+$plugin->requires  = 2024100700;        // Requires this Moodle version (4.5, for the AMD and template APIs used)
 $plugin->component = 'block_deadline_checker'; // Full name of the plugin (used for diagnostics)

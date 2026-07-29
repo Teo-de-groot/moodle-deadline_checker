@@ -1,0 +1,143 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_deadline_checker/tasks
+
+    The task list, empty state and pagination.
+
+    Rendered by PHP for the first paint and re-rendered by the AMD module whenever the learner
+    filters, pages or marks a task complete. The urgency pill is aria-hidden because the row's
+    accessible name already carries the same information in words.
+
+    Context variables required for this template:
+    * blockid string Unique id for this block instance
+    * pageslabel string Accessible name for the pagination nav
+    * rows array Task rows
+    * hasrows bool Whether there is anything to list
+    * emptytext string Shown when there is not
+    * haspages bool Whether pagination is needed
+    * pageinfo string For example "1–5 of 9"
+    * prevdisabled bool
+    * nextdisabled bool
+    * prevlabel string Accessible name for the previous button
+    * nextlabel string Accessible name for the next button
+
+    Example context (json):
+    {
+        "blockid": "dlblock-1",
+        "pageslabel": "Deadline pages",
+        "hasrows": true,
+        "emptytext": "Nothing outstanding in this course.",
+        "haspages": true,
+        "pageinfo": "1–5 of 9",
+        "prevdisabled": true,
+        "nextdisabled": false,
+        "prevlabel": "Previous page, unavailable",
+        "nextlabel": "Next page, page 2 of 2",
+        "rows": [{
+            "id": "t1",
+            "name": "Reflective log 3",
+            "meta": "Operational leadership · due Wed 5 Aug, 17:00",
+            "aria": "Reflective log 3, Operational leadership, overdue by 3 days, was due Wed 5 Aug, 17:00.",
+            "stamptext": "Overdue",
+            "stampvariant": "overdue",
+            "tinted": true,
+            "complete": false,
+            "expanded": false,
+            "haslink": false,
+            "url": null,
+            "chevronlabel": "Show actions for Reflective log 3: mark as complete",
+            "actioncta": "Mark as complete",
+            "actionaria": "Mark as complete: Reflective log 3"
+        }]
+    }
+}}
+<ul class="block_deadline_checker__list" aria-labelledby="{{blockid}}-title">
+    {{#rows}}
+        <li class="block_deadline_checker__row{{#tinted}} block_deadline_checker__row--tinted{{/tinted}}"
+            data-task="{{id}}">
+
+            <div class="block_deadline_checker__grid">
+
+                <button type="button"
+                        class="block_deadline_checker__chevron{{#expanded}} block_deadline_checker__chevron--open{{/expanded}}{{#complete}} block_deadline_checker__chevron--complete{{/complete}}"
+                        data-action="toggle"
+                        aria-expanded="{{#expanded}}true{{/expanded}}{{^expanded}}false{{/expanded}}"
+                        aria-label="{{chevronlabel}}">
+                    <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                </button>
+
+                {{#haslink}}
+                    <a class="block_deadline_checker__name" href="{{url}}" aria-label="{{aria}}">
+                        {{name}}
+                        <span class="block_deadline_checker__meta" aria-hidden="true">{{meta}}</span>
+                    </a>
+                {{/haslink}}
+                {{^haslink}}
+                    <span class="block_deadline_checker__name block_deadline_checker__name--static">
+                        {{name}}
+                        <span class="block_deadline_checker__meta">{{meta}}</span>
+                        <span class="visually-hidden">{{aria}}</span>
+                    </span>
+                {{/haslink}}
+
+                <span class="block_deadline_checker__stamp block_deadline_checker__stamp--{{stampvariant}}"
+                      aria-hidden="true">{{stamptext}}</span>
+
+            </div>
+
+            {{#expanded}}
+                <div class="block_deadline_checker__actions">
+                    <button type="button"
+                            class="block_deadline_checker__action"
+                            data-action="confirm"
+                            aria-label="{{actionaria}}">
+                        <i class="fa-solid fa-check" aria-hidden="true"></i>{{actioncta}}
+                    </button>
+                </div>
+            {{/expanded}}
+
+        </li>
+    {{/rows}}
+</ul>
+
+{{^hasrows}}
+    <div class="block_deadline_checker__empty">
+        <i class="fa-regular fa-circle-check block_deadline_checker__emptyicon" aria-hidden="true"></i>
+        <p class="block_deadline_checker__emptytext">{{emptytext}}</p>
+    </div>
+{{/hasrows}}
+
+{{#haspages}}
+    <nav class="block_deadline_checker__pager" aria-label="{{pageslabel}}">
+        <button type="button"
+                class="block_deadline_checker__pagebtn"
+                data-action="prev"
+                aria-label="{{prevlabel}}"
+                {{#prevdisabled}}disabled{{/prevdisabled}}>
+            <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+        </button>
+        <span class="block_deadline_checker__pageinfo">{{pageinfo}}</span>
+        <button type="button"
+                class="block_deadline_checker__pagebtn"
+                data-action="next"
+                aria-label="{{nextlabel}}"
+                {{#nextdisabled}}disabled{{/nextdisabled}}>
+            <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+        </button>
+    </nav>
+{{/haspages}}

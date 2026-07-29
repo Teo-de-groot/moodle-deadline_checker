@@ -15,68 +15,87 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Deadline checker block caps.
+ * Deadline checker block.
  *
  * @package    block_deadline_checker
  * @copyright  Daniel Neis <danielneis@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use block_deadline_checker\output\deadlines;
+use block_deadline_checker\sample_task_source;
+
 defined('MOODLE_INTERNAL') || die();
 
 class block_deadline_checker extends block_base {
 
+    /** @var int Page size used when the instance has not been configured. */
+    protected const DEFAULT_PAGE_SIZE = 5;
+
     function init() {
-        $this->title = get_string('pluginname', 'block_deadline_checker');
+        $this->title = get_string('blocktitle', 'block_deadline_checker');
+    }
+
+    /**
+     * The card carries its own heading and summary line, so the theme's block header would be
+     * a second copy of the same title.
+     *
+     * @return bool
+     */
+    public function hide_header() {
+        return true;
     }
 
     function get_content() {
-        global $CFG, $OUTPUT;
+        global $OUTPUT;
 
         if ($this->content !== null) {
             return $this->content;
         }
 
-        if (empty($this->instance)) {
-            $this->content = '';
-            return $this->content;
-        }
-
         $this->content = new stdClass();
-        $this->content->items = array();
-        $this->content->icons = array();
+        $this->content->text = '';
         $this->content->footer = '';
 
-        // user/index.php expect course context, so get one if page has module context.
-        $currentcontext = $this->page->context->get_course_context(false);
-
-        if (! empty($this->config->text)) {
-            $this->content->text = $this->config->text;
-        }
-
-        $this->content = '';
-        if (empty($currentcontext)) {
+        if (empty($this->instance)) {
             return $this->content;
         }
-        if ($this->page->course->id == SITEID) {
-            $this->content->text .= "site context";
-        }
 
-        if (! empty($this->config->text)) {
-            $this->content->text .= $this->config->text;
-        }
+        $now = time();
+
+        $blockid = 'dlblock-' . $this->instance->id;
+
+        $renderable = new deadlines(
+            sample_task_source::tasks($now),
+            $now,
+            $this->page_size(),
+            $blockid,
+        );
+
+
+        $this->page->requires->js_call_amd('block_deadline_checker/deadlines', 'init', [$blockid]);
+
+        $this->content->text = $OUTPUT->render_from_template('block_deadline_checker/block',
+                                                             $renderable->export_for_template($OUTPUT));
 
         return $this->content;
     }
 
-    // my moodle can only have SITEID and it's redundant here, so take it away
+
+    protected function page_size(): int {
+        $configured = (int) ($this->config->visibletasks ?? self::DEFAULT_PAGE_SIZE);
+
+        return min(deadlines::MAX_PAGE_SIZE, max(deadlines::MIN_PAGE_SIZE, $configured));
+    }
+
     public function applicable_formats() {
         return array('all' => true,
                      'site' => true,
                      'site-index' => true,
-                     'course-view' => true, 
+                     'my' => true,
+                     'course-view' => true,
                      'course-view-social' => false,
-                     'mod' => true, 
+                     'mod' => true,
                      'mod-quiz' => false);
     }
 
@@ -88,9 +107,9 @@ class block_deadline_checker extends block_base {
 
     public function cron() {
             mtrace( "Hey, my cron script is running" );
-             
+
                  // do something
-                  
+
                       return true;
     }
 }

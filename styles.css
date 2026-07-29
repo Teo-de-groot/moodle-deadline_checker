@@ -1,0 +1,386 @@
+/*
+ * Deadline checker block.
+ *
+ * Accipio design tokens are declared once, each deferring to the host theme's variable when
+ * one exists and falling back to the design system literal when it does not. When the Accipio
+ * theme is installed its variables win automatically and nothing here needs editing; on stock
+ * Boost the fallbacks apply. That is the only place a colour literal appears.
+ *
+ * Type is deliberately not set. Freizeit is licensed and ships with the Accipio theme, so the
+ * block inherits whatever font stack the theme provides rather than bundling a copy.
+ *
+ * @package    block_deadline_checker
+ * @copyright  2026 Accipio
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+.block_deadline_checker {
+    --dl-navy: var(--c-navy, #000029);
+    --dl-indigo: var(--c-indigo, #5050ff);
+    --dl-link: var(--c-indigo-hover, #3d3de0);
+    --dl-coral: var(--c-coral, #ff6d59);
+    --dl-danger: var(--c-danger, #c0362c);
+    --dl-grey-1: var(--c-grey-1, #f1f1f1);
+    --dl-border: var(--border-1, #eaeaea);
+    --dl-surface: var(--c-white, #fff);
+
+    --dl-muted: rgba(0, 0, 41, 0.62);
+    --dl-muted-strong: rgba(0, 0, 41, 0.7);
+    --dl-muted-soft: rgba(0, 0, 41, 0.6);
+    --dl-chevron: rgba(0, 0, 41, 0.55);
+    --dl-tint: rgba(192, 54, 44, 0.04);
+
+    --dl-r-card: var(--r-lg, 20px);
+    --dl-r-control: 9px;
+    --dl-r-small: 7px;
+    --dl-r-pill: var(--r-pill, 999px);
+}
+
+/* The block supplies its own card, so the theme's block chrome steps back. */
+.block_deadline_checker.block {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    padding: 0;
+}
+
+.block_deadline_checker.block > .card-body,
+.block_deadline_checker .card-body {
+    padding: 0;
+}
+
+.block_deadline_checker__card {
+    background: var(--dl-surface);
+    border: 1px solid var(--dl-border);
+    border-radius: var(--dl-r-card);
+    box-shadow: 0 1px 3px rgba(0, 0, 41, 0.06);
+    overflow: hidden;
+    color: var(--dl-navy);
+}
+
+/* Header ------------------------------------------------------------------ */
+
+.block_deadline_checker__header {
+    padding: 16px 18px 12px;
+}
+
+.block_deadline_checker__title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--dl-navy);
+}
+
+.block_deadline_checker__summary {
+    margin: 5px 0 0;
+    font-size: 11.5px;
+    font-weight: 400;
+    line-height: 1.4;
+    color: var(--dl-muted);
+}
+
+.block_deadline_checker__notice {
+    margin: 4px 0 0;
+    font-size: 11px;
+    font-style: italic;
+    line-height: 1.4;
+    color: var(--dl-muted);
+}
+
+/* Filter row -------------------------------------------------------------- */
+
+.block_deadline_checker__filters {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    padding: 0 18px 13px;
+}
+
+.block_deadline_checker__selectwrap {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+    display: flex;
+}
+
+.block_deadline_checker__select {
+    width: 100%;
+    height: 30px;
+    padding: 0 26px 0 10px;
+    appearance: none;
+    border: 1px solid var(--dl-border);
+    border-radius: var(--dl-r-control);
+    background: var(--dl-surface);
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--dl-navy);
+    cursor: pointer;
+}
+
+.block_deadline_checker__selecticon {
+    position: absolute;
+    right: 9px;
+    top: 11px;
+    font-size: 9px;
+    color: var(--dl-muted);
+    pointer-events: none;
+}
+
+.block_deadline_checker__views {
+    display: flex;
+    gap: 3px;
+    padding: 3px;
+    background: var(--dl-grey-1);
+    border-radius: var(--dl-r-control);
+}
+
+.block_deadline_checker__view {
+    height: 24px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: var(--dl-r-small);
+    background: transparent;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--dl-muted-strong);
+    cursor: pointer;
+}
+
+.block_deadline_checker__view:first-child {
+    padding: 0 9px;
+}
+
+.block_deadline_checker__view--on {
+    background: var(--dl-navy);
+    color: var(--dl-surface);
+}
+
+/* Task rows --------------------------------------------------------------- */
+
+.block_deadline_checker__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.block_deadline_checker__row {
+    border-top: 1px solid var(--dl-grey-1);
+}
+
+.block_deadline_checker__row--tinted {
+    background: var(--dl-tint);
+}
+
+.block_deadline_checker__grid {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 11px 18px;
+    align-items: center;
+}
+
+.block_deadline_checker__chevron {
+    width: 24px;
+    height: 24px;
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    border-radius: var(--dl-r-small);
+    background: transparent;
+    cursor: pointer;
+}
+
+.block_deadline_checker__chevron--open {
+    background: var(--dl-grey-1);
+}
+
+.block_deadline_checker__chevron .fa-chevron-down {
+    font-size: 10px;
+    color: var(--dl-chevron);
+    transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.block_deadline_checker__chevron--complete .fa-chevron-down {
+    color: var(--dl-indigo);
+}
+
+.block_deadline_checker__chevron--open .fa-chevron-down {
+    transform: rotate(180deg);
+}
+
+.block_deadline_checker__name {
+    justify-self: start;
+    text-align: left;
+    font-size: 13.5px;
+    font-weight: 500;
+    line-height: 1.3;
+    color: var(--dl-link);
+    text-decoration: none;
+}
+
+a.block_deadline_checker__name:hover,
+a.block_deadline_checker__name:focus {
+    color: var(--dl-indigo);
+    text-decoration: underline;
+}
+
+/* No activity to link to on sample data, so the title is not styled as interactive. */
+.block_deadline_checker__name--static {
+    color: var(--dl-navy);
+    cursor: default;
+}
+
+.block_deadline_checker__meta {
+    display: block;
+    margin-top: 3px;
+    font-size: 11.5px;
+    font-weight: 400;
+    line-height: 1.4;
+    color: var(--dl-muted-soft);
+}
+
+.block_deadline_checker__stamp {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 24px;
+    padding: 0 9px;
+    border-radius: var(--dl-r-pill);
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.block_deadline_checker__stamp--done {
+    background: var(--dl-grey-1);
+    color: rgba(0, 0, 41, 0.65);
+}
+
+.block_deadline_checker__stamp--overdue {
+    background: var(--dl-danger);
+    color: #fff;
+}
+
+/* Coral carries navy text, not white: white on coral does not clear 4.5:1. */
+.block_deadline_checker__stamp--urgent {
+    background: var(--dl-coral);
+    color: var(--dl-navy);
+}
+
+.block_deadline_checker__stamp--soon {
+    background: var(--dl-indigo);
+    color: #fff;
+}
+
+.block_deadline_checker__stamp--far {
+    background: var(--dl-grey-1);
+    color: var(--dl-navy);
+}
+
+/* Completion action ------------------------------------------------------- */
+
+.block_deadline_checker__actions {
+    display: flex;
+    margin: 0 18px 11px 48px;
+}
+
+.block_deadline_checker__action {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 28px;
+    padding: 6px 12px;
+    border: 0;
+    border-radius: var(--dl-r-control);
+    background: var(--dl-indigo);
+    color: #fff;
+    font-size: 11.5px;
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.block_deadline_checker__action .fa-check {
+    font-size: 9px;
+}
+
+/* Empty state ------------------------------------------------------------- */
+
+.block_deadline_checker__empty {
+    padding: 26px 22px;
+    border-top: 1px solid var(--dl-grey-1);
+    text-align: center;
+}
+
+.block_deadline_checker__emptyicon {
+    font-size: 22px;
+    color: var(--dl-indigo);
+}
+
+.block_deadline_checker__emptytext {
+    margin: 10px 0 0;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: rgba(0, 0, 41, 0.65);
+}
+
+/* Pagination -------------------------------------------------------------- */
+
+.block_deadline_checker__pager {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 9px 14px;
+    border-top: 1px solid var(--dl-grey-1);
+}
+
+.block_deadline_checker__pagebtn {
+    width: 28px;
+    height: 28px;
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--dl-border);
+    border-radius: 8px;
+    background: var(--dl-surface);
+    color: var(--dl-navy);
+    font-size: 10px;
+    cursor: pointer;
+}
+
+.block_deadline_checker__pagebtn:hover:not([disabled]) {
+    border-color: var(--dl-indigo);
+}
+
+.block_deadline_checker__pagebtn[disabled] {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.block_deadline_checker__pageinfo {
+    font-size: 11.5px;
+    font-weight: 400;
+    color: var(--dl-muted);
+}
+
+/* Focus ------------------------------------------------------------------- */
+
+.block_deadline_checker__card :focus-visible {
+    outline: 2px solid var(--dl-indigo);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .block_deadline_checker__chevron .fa-chevron-down {
+        transition: none;
+    }
+}

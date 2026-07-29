@@ -1,0 +1,120 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_deadline_checker/block
+
+    The deadline checker card.
+
+    Everything that changes when the learner filters, pages or marks a task complete lives in
+    block_deadline_checker/tasks, which the AMD module re-renders in place. This outer shell is
+    rendered once.
+
+    Context variables required for this template:
+    * blockid string Unique id for this block instance
+    * title string Card heading
+    * summary string Count line under the heading
+    * notice string Sample data warning
+    * filterlabel string Visually hidden label for the course select
+    * allcourses string Label for the unfiltered option
+    * statuslabel string Accessible name for the status button group
+    * views array Status views, each with key, label, aria and selected
+    * courseoptions array Course options, each with value and label
+    * list object Context for block_deadline_checker/tasks
+    * taskdata string JSON payload the AMD module reads on startup
+
+    Example context (json):
+    {
+        "blockid": "dlblock-1",
+        "title": "My deadlines",
+        "summary": "9 to do · 1 overdue",
+        "notice": "Sample data — these are not real deadlines.",
+        "filterlabel": "Filter by course",
+        "allcourses": "All courses",
+        "statuslabel": "Task status",
+        "views": [
+            {"key": "todo", "label": "To do", "aria": null, "selected": true},
+            {"key": "all", "label": "All", "aria": "All tasks", "selected": false},
+            {"key": "done", "label": "Done", "aria": "Completed", "selected": false}
+        ],
+        "courseoptions": [{"value": "ol", "label": "Operational leadership"}],
+        "taskdata": "{\"blockid\":\"dlblock-1\",\"pagesize\":5,\"tasks\":[]}",
+        "list": {
+            "blockid": "dlblock-1",
+            "pageslabel": "Deadline pages",
+            "hasrows": true,
+            "haspages": false,
+            "rows": [{
+                "id": "t1",
+                "name": "Reflective log 3",
+                "meta": "Operational leadership · due Wed 5 Aug, 17:00",
+                "aria": "Reflective log 3, Operational leadership, overdue by 3 days, was due Wed 5 Aug, 17:00.",
+                "stamptext": "Overdue",
+                "stampvariant": "overdue",
+                "tinted": true,
+                "complete": false,
+                "expanded": false,
+                "haslink": false,
+                "chevronlabel": "Show actions for Reflective log 3: mark as complete",
+                "actioncta": "Mark as complete",
+                "actionaria": "Mark as complete: Reflective log 3"
+            }]
+        }
+    }
+}}
+<div class="block_deadline_checker__card" id="{{blockid}}" data-region="deadline-checker">
+
+    <div class="block_deadline_checker__header">
+        <h2 class="block_deadline_checker__title" id="{{blockid}}-title">{{title}}</h2>
+        <p class="block_deadline_checker__summary" data-region="summary">{{summary}}</p>
+        <p class="block_deadline_checker__notice">{{notice}}</p>
+    </div>
+
+    <div class="block_deadline_checker__filters">
+        <label class="visually-hidden" for="{{blockid}}-course">{{filterlabel}}</label>
+        <span class="block_deadline_checker__selectwrap">
+            <select class="block_deadline_checker__select" id="{{blockid}}-course" data-region="course">
+                <option value="all">{{allcourses}}</option>
+                {{#courseoptions}}
+                    <option value="{{value}}">{{label}}</option>
+                {{/courseoptions}}
+            </select>
+            <i class="fa-solid fa-chevron-down block_deadline_checker__selecticon" aria-hidden="true"></i>
+        </span>
+        <span class="block_deadline_checker__views" role="group" aria-label="{{statuslabel}}">
+            {{#views}}
+                <button type="button"
+                        class="block_deadline_checker__view{{#selected}} block_deadline_checker__view--on{{/selected}}"
+                        data-action="view"
+                        data-view="{{key}}"
+                        aria-pressed="{{#selected}}true{{/selected}}{{^selected}}false{{/selected}}"
+                        {{#aria}}aria-label="{{.}}"{{/aria}}>{{label}}</button>
+            {{/views}}
+        </span>
+    </div>
+
+    <p class="visually-hidden" aria-live="polite" data-region="announce"></p>
+
+    <div data-region="list">
+        {{#list}}
+            {{> block_deadline_checker/tasks }}
+        {{/list}}
+    </div>
+
+    {{! Read once by the AMD module. Sits outside the list region so it survives re-renders. }}
+    <script type="application/json" data-region="taskdata">{{{taskdata}}}</script>
+
+</div>
