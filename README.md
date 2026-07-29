@@ -15,7 +15,7 @@ It is used by Moosh (http://moosh-online.com/) to generate new block plugins.
 the module's tables successfully created
 
 * Go to Site Administration > Plugins > Blocks > Manage blocks
-and you should find that this newblock has been added to the list of
+and you should find that this deadline checker has been added to the list of
 installed modules.
 
 * You may now proceed to run your own code in an attempt to develop
@@ -26,5 +26,3 @@ capabilities.
 We encourage you to share your code and experience - visit http://moodle.org
 
 Good luck!
-
-[![Build Status](https://travis-ci.org/danielneis/moodle-block_newblock.svg?branch=master)](https://travis-ci.org/danielneis/moodle-block_newblock)

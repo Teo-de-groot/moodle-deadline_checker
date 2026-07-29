@@ -16,9 +16,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Strings for component 'block_newblock', language 'en'
+ * Strings for component 'block_deadline_checker', language 'en'
  *
- * @package   block_newblock
+ * @package   block_deadline_checker
  * @copyright Daniel Neis <danielneis@gmail.com>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -28,6 +28,6 @@ $string['descconfig'] = 'Description of the config section';
 $string['descfoo'] = 'Config description';
 $string['headerconfig'] = 'Config section header';
 $string['labelfoo'] = 'Config label';
-$string['newblock:addinstance'] = 'Add a newblock block';
-$string['newblock:myaddinstance'] = 'Add a newblock block to my moodle';
-$string['pluginname'] = 'Newblock';
+$string['deadline_checker:addinstance'] = 'Add a deadline checker block';
+$string['deadline_checker:myaddinstance'] = 'Add a deadline checker block to my moodle';
+$string['pluginname'] = 'Deadline checker';

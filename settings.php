@@ -15,9 +15,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Newblock block caps.
+ * Deadline checker block caps.
  *
- * @package    block_newblock
+ * @package    block_deadline_checker
  * @copyright  Daniel Neis <danielneis@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -25,10 +25,10 @@
 defined('MOODLE_INTERNAL') || die();
 
 $settings->add(new admin_setting_heading('sampleheader',
-                                         get_string('headerconfig', 'block_newblock'),
-                                         get_string('descconfig', 'block_newblock')));
+                                         get_string('headerconfig', 'block_deadline_checker'),
+                                         get_string('descconfig', 'block_deadline_checker')));
 
-$settings->add(new admin_setting_configcheckbox('newblock/foo',
-                                                get_string('labelfoo', 'block_newblock'),
-                                                get_string('descfoo', 'block_newblock'),
+$settings->add(new admin_setting_configcheckbox('deadline_checker/foo',
+                                                get_string('labelfoo', 'block_deadline_checker'),
+                                                get_string('descfoo', 'block_deadline_checker'),
                                                 '0'));
