@@ -26,7 +26,9 @@
     Context variables required for this template:
     * blockid string Unique id for this block instance
     * pageslabel string Accessible name for the pagination nav
-    * rows array Task rows
+    * rows array Task rows. Each carries cantoggle, canedit and hasactions: completion, editing
+      and whether there is any action at all, which are three different questions once a learner
+      can keep deadlines of their own alongside their courses'.
     * hasrows bool Whether there is anything to list
     * emptytext string Shown when there is not
     * haspages bool Whether pagination is needed
@@ -58,11 +60,18 @@
             "tinted": true,
             "complete": false,
             "expanded": false,
+            "cantoggle": true,
+            "canedit": false,
+            "hasactions": true,
             "haslink": false,
             "url": null,
             "chevronlabel": "Show actions for Reflective log 3: mark as complete",
             "actioncta": "Mark as complete",
-            "actionaria": "Mark as complete: Reflective log 3"
+            "actionaria": "Mark as complete: Reflective log 3",
+            "editcta": "Edit",
+            "editaria": "Edit deadline: Reflective log 3",
+            "deletecta": "Delete",
+            "deletearia": "Delete deadline: Reflective log 3"
         }]
     }
 }}
@@ -73,13 +82,21 @@
 
             <div class="block_deadline_checker__grid">
 
-                <button type="button"
-                        class="block_deadline_checker__chevron{{#expanded}} block_deadline_checker__chevron--open{{/expanded}}{{#complete}} block_deadline_checker__chevron--complete{{/complete}}"
-                        data-action="toggle"
-                        aria-expanded="{{#expanded}}true{{/expanded}}{{^expanded}}false{{/expanded}}"
-                        aria-label="{{chevronlabel}}">
-                    <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
-                </button>
+                {{#hasactions}}
+                    <button type="button"
+                            class="block_deadline_checker__chevron{{#expanded}} block_deadline_checker__chevron--open{{/expanded}}{{#complete}} block_deadline_checker__chevron--complete{{/complete}}"
+                            data-action="toggle"
+                            aria-expanded="{{#expanded}}true{{/expanded}}{{^expanded}}false{{/expanded}}"
+                            aria-label="{{chevronlabel}}">
+                        <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                    </button>
+                {{/hasactions}}
+                {{^hasactions}}
+                    {{! The course decides this activity's completion and its date, so there is
+                        nothing to reveal. The column stays to keep the rows aligned. }}
+                    <span class="block_deadline_checker__chevron block_deadline_checker__chevron--none"
+                          aria-hidden="true"></span>
+                {{/hasactions}}
 
                 {{#haslink}}
                     <a class="block_deadline_checker__name" href="{{url}}" aria-label="{{aria}}">
@@ -102,12 +119,30 @@
 
             {{#expanded}}
                 <div class="block_deadline_checker__actions">
-                    <button type="button"
-                            class="block_deadline_checker__action"
-                            data-action="confirm"
-                            aria-label="{{actionaria}}">
-                        <i class="fa-solid fa-check" aria-hidden="true"></i>{{actioncta}}
-                    </button>
+                    {{#cantoggle}}
+                        <button type="button"
+                                class="block_deadline_checker__action"
+                                data-action="confirm"
+                                aria-label="{{actionaria}}">
+                            <i class="fa-solid fa-check" aria-hidden="true"></i>{{actioncta}}
+                        </button>
+                    {{/cantoggle}}
+                    {{#canedit}}
+                        {{! Only on deadlines the learner wrote down themselves. A course's dates
+                            are the course's to change, and Moodle already has a place for that. }}
+                        <button type="button"
+                                class="block_deadline_checker__action block_deadline_checker__action--quiet"
+                                data-action="edit"
+                                aria-label="{{editaria}}">
+                            <i class="fa-solid fa-pen" aria-hidden="true"></i>{{editcta}}
+                        </button>
+                        <button type="button"
+                                class="block_deadline_checker__action block_deadline_checker__action--destructive"
+                                data-action="delete"
+                                aria-label="{{deletearia}}">
+                            <i class="fa-solid fa-trash-can" aria-hidden="true"></i>{{deletecta}}
+                        </button>
+                    {{/canedit}}
                 </div>
             {{/expanded}}
 

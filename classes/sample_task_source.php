@@ -25,9 +25,10 @@ namespace block_deadline_checker;
  * the handoff's test cases are reproducible: a task about forty minutes out, one three days
  * overdue, a course whose tasks are all complete, and enough rows to page through.
  *
- * To move the block onto real data, replace this class with one that queries the learner's
- * course modules and completion state and returns the same {@see task} objects. Nothing else
- * in the plugin needs to change.
+ * The block no longer renders these: it reads the learner's own courses through
+ * {@see course_task_source}. The dataset stays because it is the definition of the placeholder
+ * courses and activities that cli/create_test_data.php writes into the database, and because
+ * the design's test cases are pinned to it.
  *
  * @package    block_deadline_checker
  * @copyright  2026 Accipio
@@ -117,15 +118,11 @@ class sample_task_source {
     /**
      * Whole calendar days between today and a due date, in the learner's timezone.
      *
-     * Calendar days rather than 24 hour blocks, so a deadline at 09:00 tomorrow counts as one
-     * day away even though it is only sixteen hours off. Rounded because daylight saving makes
-     * some days 23 or 25 hours long.
-     *
      * @param int $now Current time as a unix timestamp.
      * @param int $due Due date as a unix timestamp.
      * @return int Negative when the due date has passed.
      */
     public static function day_difference(int $now, int $due): int {
-        return (int) round((usergetmidnight($due) - usergetmidnight($now)) / DAYSECS);
+        return calendar_days::between($now, $due);
     }
 }

@@ -48,4 +48,15 @@ $capabilities = array(
 
         'clonepermissionsfrom' => 'moodle/site:manageblocks'
     ),
+
+    // Keeping a list of one's own deadlines. Granted at the system level because the list follows
+    // the learner rather than any one course, and it only ever reaches their own rows: there is no
+    // capability here that lets anyone read or change somebody else's deadline, by design.
+    'block/deadline_checker:manageowndeadlines' => array(
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => array(
+            'user' => CAP_ALLOW
+        ),
+    ),
 );

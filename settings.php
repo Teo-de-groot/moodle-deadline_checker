@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Deadline checker block caps.
+ * Site-wide settings for the deadline checker block.
  *
  * @package    block_deadline_checker
  * @copyright  Daniel Neis <danielneis@gmail.com>
@@ -24,11 +24,15 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$settings->add(new admin_setting_heading('sampleheader',
-                                         get_string('headerconfig', 'block_deadline_checker'),
-                                         get_string('descconfig', 'block_deadline_checker')));
+$sizes = range(\block_deadline_checker\output\deadlines::MIN_PAGE_SIZE,
+               \block_deadline_checker\output\deadlines::MAX_PAGE_SIZE);
 
-$settings->add(new admin_setting_configcheckbox('deadline_checker/foo',
-                                                get_string('labelfoo', 'block_deadline_checker'),
-                                                get_string('descfoo', 'block_deadline_checker'),
-                                                '0'));
+// The default for every block that has not been configured itself. The same range the instance
+// form offers, so a site default can never be a number an editor is unable to set.
+$settings->add(new admin_setting_configselect(
+    'block_deadline_checker/visibletasks',
+    get_string('defaultvisibletasks', 'block_deadline_checker'),
+    get_string('defaultvisibletasks_desc', 'block_deadline_checker'),
+    \block_deadline_checker\output\deadlines::DEFAULT_PAGE_SIZE,
+    array_combine($sizes, $sizes)
+));

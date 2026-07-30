@@ -41,6 +41,16 @@ final class task {
      *                     so a deadline at 09:00 tomorrow is 1 even when it is 16 hours away.
      * @param bool $complete Whether the learner has completed the activity.
      * @param string|null $url Link to the activity, or null when there is nothing to link to.
+     * @param int|null $cmid The course module the deadline belongs to, when it is one. What the
+     *                       browser needs to record completion against.
+     * @param bool $manualcompletion Whether the learner may set completion themselves. False for
+     *                               activities that complete themselves from a submission or a
+     *                               grade, which the block must not pretend to control.
+     * @param int|null $personalid Row id in block_deadline_checker_task when the learner added
+     *                             this deadline themselves, null when it came from a course. This
+     *                             is what tells the two apart everywhere else: a course deadline
+     *                             belongs to the course and the block only reads it, whereas a
+     *                             personal one is the learner's own to change or remove.
      */
     public function __construct(
         public readonly string $id,
@@ -51,7 +61,19 @@ final class task {
         public readonly int $daydiff,
         public readonly bool $complete,
         public readonly ?string $url = null,
+        public readonly ?int $cmid = null,
+        public readonly bool $manualcompletion = false,
+        public readonly ?int $personalid = null,
     ) {
+    }
+
+    /**
+     * Whether the learner added this deadline themselves, and may therefore edit or delete it.
+     *
+     * @return bool
+     */
+    public function is_personal(): bool {
+        return $this->personalid !== null;
     }
 
     /**
@@ -62,6 +84,7 @@ final class task {
      */
     public function with_complete(bool $complete): self {
         return new self($this->id, $this->name, $this->courseid, $this->coursename,
-                        $this->due, $this->daydiff, $complete, $this->url);
+                        $this->due, $this->daydiff, $complete, $this->url,
+                        $this->cmid, $this->manualcompletion, $this->personalid);
     }
 }

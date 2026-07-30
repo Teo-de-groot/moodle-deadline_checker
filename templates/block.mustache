@@ -27,7 +27,9 @@
     * blockid string Unique id for this block instance
     * title string Card heading
     * summary string Count line under the heading
-    * notice string Sample data warning
+    * canadd bool Whether this learner may add deadlines of their own
+    * addlabel string Label for the add control
+    * addaria string Accessible name for the add control
     * filterlabel string Visually hidden label for the course select
     * allcourses string Label for the unfiltered option
     * statuslabel string Accessible name for the status button group
@@ -41,7 +43,9 @@
         "blockid": "dlblock-1",
         "title": "My deadlines",
         "summary": "9 to do · 1 overdue",
-        "notice": "Sample data — these are not real deadlines.",
+        "canadd": true,
+        "addlabel": "Add",
+        "addaria": "Add a deadline of my own",
         "filterlabel": "Filter by course",
         "allcourses": "All courses",
         "statuslabel": "Task status",
@@ -78,9 +82,20 @@
 <div class="block_deadline_checker__card" id="{{blockid}}" data-region="deadline-checker">
 
     <div class="block_deadline_checker__header">
-        <h2 class="block_deadline_checker__title" id="{{blockid}}-title">{{title}}</h2>
-        <p class="block_deadline_checker__summary" data-region="summary">{{summary}}</p>
-        <p class="block_deadline_checker__notice">{{notice}}</p>
+        <div class="block_deadline_checker__headings">
+            <h2 class="block_deadline_checker__title" id="{{blockid}}-title">{{title}}</h2>
+            <p class="block_deadline_checker__summary" data-region="summary">{{summary}}</p>
+        </div>
+        {{#canadd}}
+            {{! Sits in the header rather than under the list, so it is reachable without paging
+                to the end and stays put when the list is re-rendered. }}
+            <button type="button"
+                    class="block_deadline_checker__add"
+                    data-action="add"
+                    aria-label="{{addaria}}">
+                <i class="fa-solid fa-plus" aria-hidden="true"></i>{{addlabel}}
+            </button>
+        {{/canadd}}
     </div>
 
     <div class="block_deadline_checker__filters">

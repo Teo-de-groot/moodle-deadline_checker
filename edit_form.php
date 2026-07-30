@@ -34,11 +34,15 @@ class block_deadline_checker_edit_form extends block_edit_form {
 
         $sizes = range(deadlines::MIN_PAGE_SIZE, deadlines::MAX_PAGE_SIZE);
 
+        // Starts at whatever the site default is, so this form agrees with the block the editor
+        // is looking at rather than with a number hard coded here.
+        $default = (int) get_config('block_deadline_checker', 'visibletasks');
+
         $mform->addElement('select', 'config_visibletasks',
                            get_string('visibletasks', 'block_deadline_checker'),
                            array_combine($sizes, $sizes));
         $mform->addHelpButton('config_visibletasks', 'visibletasks', 'block_deadline_checker');
-        $mform->setDefault('config_visibletasks', 5);
+        $mform->setDefault('config_visibletasks', $default > 0 ? $default : deadlines::DEFAULT_PAGE_SIZE);
         $mform->setType('config_visibletasks', PARAM_INT);
     }
 }

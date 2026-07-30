@@ -43,6 +43,9 @@ class deadlines implements renderable, templatable {
     /** @var int Largest page size the instance config allows. */
     public const MAX_PAGE_SIZE = 12;
 
+    /** @var int Page size used when neither the instance nor the site has said otherwise. */
+    public const DEFAULT_PAGE_SIZE = 5;
+
     /** @var int Page size used on tablet and mobile widths, regardless of config. */
     public const COMPACT_PAGE_SIZE = 3;
 
@@ -51,12 +54,17 @@ class deadlines implements renderable, templatable {
      * @param int $now Current time as a unix timestamp.
      * @param int $pagesize Tasks per page.
      * @param string $blockid Unique id for this block instance, used to scope the markup.
+     * @param bool $canadd Whether this learner may keep deadlines of their own, which decides
+     *                     whether the card offers the Add control at all. Passed in rather than
+     *                     checked here, so this class stays a presenter and the capability is
+     *                     asked about in one place.
      */
     public function __construct(
         protected array $tasks,
         protected int $now,
         protected int $pagesize,
         protected string $blockid,
+        protected bool $canadd = false,
     ) {
     }
 
@@ -74,6 +82,9 @@ class deadlines implements renderable, templatable {
             'blockid' => $this->blockid,
             'title' => get_string('blocktitle', 'block_deadline_checker'),
             'summary' => $this->summary($this->tasks),
+            'canadd' => $this->canadd,
+            'addlabel' => get_string('adddeadline', 'block_deadline_checker'),
+            'addaria' => get_string('adddeadlinearia', 'block_deadline_checker'),
             'filterlabel' => get_string('filterbycourse', 'block_deadline_checker'),
             'allcourses' => get_string('allcourses', 'block_deadline_checker'),
             'statuslabel' => get_string('taskstatus', 'block_deadline_checker'),
@@ -86,7 +97,6 @@ class deadlines implements renderable, templatable {
                  'aria' => get_string('completed', 'block_deadline_checker'), 'selected' => false],
             ],
             'courseoptions' => $this->course_options($todo),
-            'notice' => get_string('sampledatanotice', 'block_deadline_checker'),
             // The first page of the To do view, so the block is complete and readable before
             // any JavaScript runs.
             'list' => $this->list_context($initial, count($todo), 0, 'todo', 'all'),
@@ -170,6 +180,11 @@ class deadlines implements renderable, templatable {
             'tinted' => $stamp['tinted'],
             'complete' => $task->complete,
             'expanded' => false,
+            // No button unless the learner is the one who decides: see task::$manualcompletion.
+            'cantoggle' => $this->can_toggle($task),
+            // Only their own deadlines. A course's dates stay the course's to change.
+            'canedit' => $task->is_personal(),
+            'hasactions' => $this->can_toggle($task) || $task->is_personal(),
             'chevronlabel' => $this->chevron_label($task, false),
             'actioncta' => $task->complete
                 ? get_string('reopentask', 'block_deadline_checker')
@@ -177,6 +192,10 @@ class deadlines implements renderable, templatable {
             'actionaria' => $task->complete
                 ? get_string('reopentaskaria', 'block_deadline_checker', $task->name)
                 : get_string('markascompletearia', 'block_deadline_checker', $task->name),
+            'editcta' => get_string('editdeadline', 'block_deadline_checker'),
+            'editaria' => get_string('editdeadlinearia', 'block_deadline_checker', $task->name),
+            'deletecta' => get_string('deletedeadline', 'block_deadline_checker'),
+            'deletearia' => get_string('deletedeadlinearia', 'block_deadline_checker', $task->name),
         ];
     }
 
@@ -203,11 +222,27 @@ class deadlines implements renderable, templatable {
                 'courseid' => $task->courseid,
                 'due' => $task->due,
                 'complete' => $task->complete,
+                // What the browser records completion against, and whether it may. A deadline has
+                // one or the other: a cmid means core's completion web service, a personalid means
+                // this plugin's. Never both, and the browser must not have to guess which.
+                'cmid' => $task->cmid,
+                'personalid' => $task->personalid,
+                'cantoggle' => $this->can_toggle($task),
+                'canedit' => $task->is_personal(),
                 // Kept alongside the wording so the browser can recount the summary line
                 // without having to work out what "overdue" means.
                 'overdue' => $task->daydiff < 0,
                 'url' => $task->url,
                 'haslink' => $task->url !== null,
+                // Editing and removing do not depend on whether the deadline is done, so unlike
+                // the wording below these sit once on the task rather than in both states.
+                'editcta' => get_string('editdeadline', 'block_deadline_checker'),
+                'editaria' => get_string('editdeadlinearia', 'block_deadline_checker', $task->name),
+                'deletecta' => get_string('deletedeadline', 'block_deadline_checker'),
+                'deletearia' => get_string('deletedeadlinearia', 'block_deadline_checker', $task->name),
+                // Named here rather than assembled in the confirmation dialogue, so the learner is
+                // asked about a deadline by name and the browser still composes nothing.
+                'deleteconfirm' => get_string('deleteconfirm', 'block_deadline_checker', $task->name),
                 'open' => [
                     'meta' => $this->meta($open),
                     'aria' => $this->aria($open),
@@ -240,11 +275,7 @@ class deadlines implements renderable, templatable {
             'pagesize' => $this->pagesize,
             'compactpagesize' => self::COMPACT_PAGE_SIZE,
             'tasks' => $tasks,
-            'courses' => array_map(
-                fn($id, $name) => ['id' => $id, 'name' => $name],
-                array_keys($this->course_names()),
-                array_values($this->course_names()),
-            ),
+            'courses' => $this->courses(),
             'strings' => [
                 'allcourses' => get_string('allcourses', 'block_deadline_checker'),
                 'pageslabel' => get_string('deadlinepages', 'block_deadline_checker'),
@@ -252,6 +283,10 @@ class deadlines implements renderable, templatable {
                 'emptytodocourse' => get_string('emptytodocourse', 'block_deadline_checker'),
                 'emptyall' => get_string('emptyall', 'block_deadline_checker'),
                 'emptydone' => get_string('emptydone', 'block_deadline_checker'),
+                'deleteconfirmtitle' => get_string('deleteconfirmtitle', 'block_deadline_checker'),
+                'deleteconfirmyes' => get_string('deletedeadline', 'block_deadline_checker'),
+                'addtitle' => get_string('adddeadlinetitle', 'block_deadline_checker'),
+                'edittitle' => get_string('editdeadlinetitle', 'block_deadline_checker'),
             ],
         ];
     }
@@ -283,12 +318,12 @@ class deadlines implements renderable, templatable {
      * @return array[] Option contexts.
      */
     protected function course_options(array $inview): array {
-        $present = array_unique(array_map(fn(task $t) => $t->courseid, $inview));
+        $present = array_map(fn(task $t) => $t->courseid, $inview);
         $options = [];
 
-        foreach ($this->course_names() as $id => $name) {
-            if (in_array($id, $present, true)) {
-                $options[] = ['value' => $id, 'label' => $name, 'selected' => false];
+        foreach ($this->courses() as $course) {
+            if (in_array($course['id'], $present, true)) {
+                $options[] = ['value' => $course['id'], 'label' => $course['name'], 'selected' => false];
             }
         }
 
@@ -296,16 +331,30 @@ class deadlines implements renderable, templatable {
     }
 
     /**
-     * Course identifiers and names, in the order they were first seen.
+     * The courses the tasks belong to, in the order they were first seen.
      *
-     * @return string[] Identifier => name.
+     * A list of pairs rather than a map keyed by course id, because PHP turns a numeric string
+     * array key into an integer: keying by a real course id such as "12" would hand the filter
+     * and the browser the number 12 while every task still says "12", and identity comparisons
+     * against them would all fail.
+     *
+     * @return array[] Each ['id' => string, 'name' => string].
      */
-    protected function course_names(): array {
-        $names = [];
+    protected function courses(): array {
+        $courses = [];
+        $seen = [];
+
         foreach ($this->tasks as $task) {
-            $names[$task->courseid] ??= $task->coursename;
+            // Only ever a set membership test, so the key's own type does not matter here.
+            if (isset($seen[$task->courseid])) {
+                continue;
+            }
+
+            $seen[$task->courseid] = true;
+            $courses[] = ['id' => $task->courseid, 'name' => $task->coursename];
         }
-        return $names;
+
+        return $courses;
     }
 
     /**
@@ -353,13 +402,39 @@ class deadlines implements renderable, templatable {
     }
 
     /**
+     * Whether the learner can mark this task complete from the block.
+     *
+     * A deadline the learner wrote down themselves is always theirs to tick off. For an activity
+     * both halves matter: it has to track completion manually, and there has to be a course module
+     * to record it against.
+     *
+     * @param task $task The task.
+     * @return bool
+     */
+    protected function can_toggle(task $task): bool {
+        if ($task->is_personal()) {
+            return true;
+        }
+
+        return $task->manualcompletion && $task->cmid !== null;
+    }
+
+    /**
      * The chevron's accessible name, which says what expanding will offer.
+     *
+     * A personal deadline's strip holds more than one thing, so naming a single action would be
+     * wrong. Course rows keep the wording they had, which names the only action there is.
      *
      * @param task $task The task.
      * @param bool $expanded Whether the action strip is currently open.
      * @return string
      */
     protected function chevron_label(task $task, bool $expanded): string {
+        if ($task->is_personal()) {
+            return get_string($expanded ? 'hideactions' : 'showactions',
+                              'block_deadline_checker', $task->name);
+        }
+
         $key = match (true) {
             $expanded && $task->complete => 'hideactionsreopen',
             $expanded => 'hideactionscomplete',

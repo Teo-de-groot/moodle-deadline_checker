@@ -22,15 +22,13 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use block_deadline_checker\merged_task_source;
 use block_deadline_checker\output\deadlines;
-use block_deadline_checker\sample_task_source;
+use block_deadline_checker\personal_task_repository;
 
 defined('MOODLE_INTERNAL') || die();
 
 class block_deadline_checker extends block_base {
-
-    /** @var int Page size used when the instance has not been configured. */
-    protected const DEFAULT_PAGE_SIZE = 5;
 
     function init() {
         $this->title = get_string('blocktitle', 'block_deadline_checker');
@@ -66,10 +64,14 @@ class block_deadline_checker extends block_base {
         $blockid = 'dlblock-' . $this->instance->id;
 
         $renderable = new deadlines(
-            sample_task_source::tasks($now),
+            merged_task_source::tasks($now),
             $now,
             $this->page_size(),
             $blockid,
+            // Asked once, here, and passed down: the presenter and the templates only need to know
+            // the answer. The web services ask again for themselves, because a browser can call
+            // them without ever having rendered this block.
+            personal_task_repository::can_manage(),
         );
 
 
@@ -82,8 +84,21 @@ class block_deadline_checker extends block_base {
     }
 
 
+    /**
+     * Tasks per page: this instance's setting, else the site default, else the built-in one.
+     *
+     * Clamped rather than trusted, because a stored value can outlive the range that produced it.
+     *
+     * @return int
+     */
     protected function page_size(): int {
-        $configured = (int) ($this->config->visibletasks ?? self::DEFAULT_PAGE_SIZE);
+        $configured = (int) ($this->config->visibletasks
+            ?? get_config('block_deadline_checker', 'visibletasks'));
+
+        if ($configured <= 0) {
+            // Nothing configured anywhere: get_config returns false until an admin saves the page.
+            $configured = deadlines::DEFAULT_PAGE_SIZE;
+        }
 
         return min(deadlines::MAX_PAGE_SIZE, max(deadlines::MIN_PAGE_SIZE, $configured));
     }

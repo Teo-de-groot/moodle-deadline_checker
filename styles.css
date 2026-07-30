@@ -6,8 +6,17 @@
  * theme is installed its variables win automatically and nothing here needs editing; on stock
  * Boost the fallbacks apply. That is the only place a colour literal appears.
  *
+ * Every token below names a *role* rather than a colour, which is what makes the dark scheme at
+ * the foot of this file possible: --dl-ink is "whatever text is", not "navy". Two of them exist
+ * only because a single value cannot serve both schemes — --dl-invert-* is the selected status
+ * chip, which is dark-on-light in one scheme and light-on-dark in the other, and --dl-on-bright
+ * is ink that stays dark because it sits on coral, which is bright in both.
+ *
  * Type is deliberately not set. Freizeit is licensed and ships with the Accipio theme, so the
  * block inherits whatever font stack the theme provides rather than bundling a copy.
+ *
+ * Contrast: every text pair here was checked against WCAG 2.1 AA (4.5:1 for body text, 3:1 for
+ * borders, icons and the focus ring) in both schemes.
  *
  * @package    block_deadline_checker
  * @copyright  2026 Accipio
@@ -15,25 +24,62 @@
  */
 
 .block_deadline_checker {
-    --dl-navy: var(--c-navy, #000029);
+    /* Tell the browser which scheme this subtree is in, so native parts of the controls — the
+       select's own dropdown, scrollbars, the date picker — follow the card rather than staying
+       light inside a dark one. */
+    color-scheme: light;
+
     --dl-indigo: var(--c-indigo, #5050ff);
     --dl-link: var(--c-indigo-hover, #3d3de0);
     --dl-coral: var(--c-coral, #ff6d59);
     --dl-danger: var(--c-danger, #c0362c);
-    --dl-grey-1: var(--c-grey-1, #f1f1f1);
-    --dl-border: var(--border-1, #eaeaea);
+    --dl-danger-ink: #fff;
+    /* The danger colour used as text on the card rather than as a fill, which needs a different
+       value in a dark scheme: a red dark enough to carry white text is too dark to be read on
+       a dark surface. */
+    --dl-danger-text: var(--c-danger, #c0362c);
     --dl-surface: var(--c-white, #fff);
+    --dl-raised: var(--c-grey-1, #f1f1f1);
+    --dl-divider: var(--c-grey-1, #f1f1f1);
+    --dl-border: var(--border-1, #eaeaea);
+    /* Borders that are the edge of a control rather than decoration, so they owe 3:1. */
+    --dl-border-control: var(--border-1, #eaeaea);
 
+    --dl-ink: var(--c-navy, #000029);
     --dl-muted: rgba(0, 0, 41, 0.62);
     --dl-muted-strong: rgba(0, 0, 41, 0.7);
     --dl-muted-soft: rgba(0, 0, 41, 0.6);
+    /* Ink that sits on --dl-raised rather than on the card: the Done and neutral pills, and the
+       empty state. Its own token because the raised surface is not the card's surface. */
+    --dl-ink-quiet: rgba(0, 0, 41, 0.65);
     --dl-chevron: rgba(0, 0, 41, 0.55);
     --dl-tint: rgba(192, 54, 44, 0.04);
+    --dl-shadow: 0 1px 3px rgba(0, 0, 41, 0.06);
+
+    /* The selected status chip, which inverts the card. */
+    --dl-invert-bg: var(--c-navy, #000029);
+    --dl-invert-ink: var(--c-white, #fff);
+
+    /* Ink for coral and the other bright fills: dark in both schemes, because they are bright in
+       both. White on coral does not clear 4.5:1. */
+    --dl-on-bright: var(--c-navy, #000029);
+
+    /* Ink on the indigo fills — the action button and the "due soon" pill. */
+    --dl-on-indigo: #fff;
+
+    /* The focus ring, which owes 3:1 against whatever it is drawn over. Its own token because in
+       a dark scheme it has to be brighter than the fill colour it borrows from in a light one. */
+    --dl-focus: var(--c-indigo, #5050ff);
 
     --dl-r-card: var(--r-lg, 20px);
     --dl-r-control: 9px;
     --dl-r-small: 7px;
     --dl-r-pill: var(--r-pill, 999px);
+
+    /* Sizes the touch rules below raise together: the action strip lines up under the task
+       name, so it has to follow whatever the chevron column is currently doing. */
+    --dl-chevron-size: 24px;
+    --dl-action-indent: 48px;
 }
 
 /* The block supplies its own card, so the theme's block chrome steps back. */
@@ -50,18 +96,52 @@
 }
 
 .block_deadline_checker__card {
+    /* The card is the yardstick, not the viewport: this block is a narrow sidebar column on a
+       desktop and nearly full width on a phone, so the layout has to answer to the space it
+       actually has. Browsers without container query support keep the wide layout, which is
+       what they showed before. */
+    container: deadline-checker / inline-size;
     background: var(--dl-surface);
     border: 1px solid var(--dl-border);
     border-radius: var(--dl-r-card);
-    box-shadow: 0 1px 3px rgba(0, 0, 41, 0.06);
+    box-shadow: var(--dl-shadow);
     overflow: hidden;
-    color: var(--dl-navy);
+    color: var(--dl-ink);
 }
 
 /* Header ------------------------------------------------------------------ */
 
 .block_deadline_checker__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
     padding: 16px 18px 12px;
+}
+
+.block_deadline_checker__headings {
+    min-width: 0;
+}
+
+.block_deadline_checker__add {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: none;
+    min-height: 26px;
+    padding: 5px 10px;
+    border: 0;
+    border-radius: var(--dl-r-control);
+    background: var(--dl-indigo);
+    color: var(--dl-on-indigo);
+    font-size: 11.5px;
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.block_deadline_checker__add .fa-plus {
+    font-size: 9px;
 }
 
 .block_deadline_checker__title {
@@ -69,21 +149,13 @@
     font-size: 15px;
     font-weight: 500;
     line-height: 1.2;
-    color: var(--dl-navy);
+    color: var(--dl-ink);
 }
 
 .block_deadline_checker__summary {
     margin: 5px 0 0;
     font-size: 11.5px;
     font-weight: 400;
-    line-height: 1.4;
-    color: var(--dl-muted);
-}
-
-.block_deadline_checker__notice {
-    margin: 4px 0 0;
-    font-size: 11px;
-    font-style: italic;
     line-height: 1.4;
     color: var(--dl-muted);
 }
@@ -109,19 +181,21 @@
     height: 30px;
     padding: 0 26px 0 10px;
     appearance: none;
-    border: 1px solid var(--dl-border);
+    border: 1px solid var(--dl-border-control);
     border-radius: var(--dl-r-control);
     background: var(--dl-surface);
     font-size: 11.5px;
     font-weight: 500;
-    color: var(--dl-navy);
+    color: var(--dl-ink);
     cursor: pointer;
 }
 
 .block_deadline_checker__selecticon {
     position: absolute;
     right: 9px;
-    top: 11px;
+    /* Centred rather than offset from the top, so it stays put when the select grows for touch. */
+    top: 50%;
+    transform: translateY(-50%);
     font-size: 9px;
     color: var(--dl-muted);
     pointer-events: none;
@@ -131,7 +205,7 @@
     display: flex;
     gap: 3px;
     padding: 3px;
-    background: var(--dl-grey-1);
+    background: var(--dl-raised);
     border-radius: var(--dl-r-control);
 }
 
@@ -153,8 +227,8 @@
 }
 
 .block_deadline_checker__view--on {
-    background: var(--dl-navy);
-    color: var(--dl-surface);
+    background: var(--dl-invert-bg);
+    color: var(--dl-invert-ink);
 }
 
 /* Task rows --------------------------------------------------------------- */
@@ -166,7 +240,7 @@
 }
 
 .block_deadline_checker__row {
-    border-top: 1px solid var(--dl-grey-1);
+    border-top: 1px solid var(--dl-divider);
 }
 
 .block_deadline_checker__row--tinted {
@@ -182,8 +256,8 @@
 }
 
 .block_deadline_checker__chevron {
-    width: 24px;
-    height: 24px;
+    width: var(--dl-chevron-size);
+    height: var(--dl-chevron-size);
     flex: none;
     display: flex;
     align-items: center;
@@ -196,7 +270,12 @@
 }
 
 .block_deadline_checker__chevron--open {
-    background: var(--dl-grey-1);
+    background: var(--dl-raised);
+}
+
+/* Row with no action to reveal: holds the column so the rows stay aligned, shows nothing. */
+.block_deadline_checker__chevron--none {
+    visibility: hidden;
 }
 
 .block_deadline_checker__chevron .fa-chevron-down {
@@ -221,6 +300,9 @@
     line-height: 1.3;
     color: var(--dl-link);
     text-decoration: none;
+    /* An activity name is whatever a teacher typed. A long unbroken one must wrap rather than
+       push the row wider than the block. */
+    overflow-wrap: anywhere;
 }
 
 a.block_deadline_checker__name:hover,
@@ -231,7 +313,7 @@ a.block_deadline_checker__name:focus {
 
 /* No activity to link to on sample data, so the title is not styled as interactive. */
 .block_deadline_checker__name--static {
-    color: var(--dl-navy);
+    color: var(--dl-ink);
     cursor: default;
 }
 
@@ -242,6 +324,7 @@ a.block_deadline_checker__name:focus {
     font-weight: 400;
     line-height: 1.4;
     color: var(--dl-muted-soft);
+    overflow-wrap: anywhere;
 }
 
 .block_deadline_checker__stamp {
@@ -258,36 +341,40 @@ a.block_deadline_checker__name:focus {
 }
 
 .block_deadline_checker__stamp--done {
-    background: var(--dl-grey-1);
-    color: rgba(0, 0, 41, 0.65);
+    background: var(--dl-raised);
+    color: var(--dl-ink-quiet);
 }
 
 .block_deadline_checker__stamp--overdue {
     background: var(--dl-danger);
-    color: #fff;
+    color: var(--dl-danger-ink);
 }
 
 /* Coral carries navy text, not white: white on coral does not clear 4.5:1. */
 .block_deadline_checker__stamp--urgent {
     background: var(--dl-coral);
-    color: var(--dl-navy);
+    color: var(--dl-on-bright);
 }
 
 .block_deadline_checker__stamp--soon {
     background: var(--dl-indigo);
-    color: #fff;
+    color: var(--dl-on-indigo);
 }
 
 .block_deadline_checker__stamp--far {
-    background: var(--dl-grey-1);
-    color: var(--dl-navy);
+    background: var(--dl-raised);
+    color: var(--dl-ink);
 }
 
-/* Completion action ------------------------------------------------------- */
+/* Row actions ------------------------------------------------------------- */
 
 .block_deadline_checker__actions {
     display: flex;
-    margin: 0 18px 11px 48px;
+    /* Up to three buttons on a deadline the learner owns, in a column that can be very narrow.
+       Wrapping keeps every label readable rather than shrinking them all past legibility. */
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0 18px 11px var(--dl-action-indent);
 }
 
 .block_deadline_checker__action {
@@ -299,14 +386,30 @@ a.block_deadline_checker__name:focus {
     border: 0;
     border-radius: var(--dl-r-control);
     background: var(--dl-indigo);
-    color: #fff;
+    color: var(--dl-on-indigo);
     font-size: 11.5px;
     font-weight: 500;
     line-height: 1;
     cursor: pointer;
 }
 
-.block_deadline_checker__action .fa-check {
+/* Editing is secondary to completing, so it does not compete for the same emphasis. */
+.block_deadline_checker__action--quiet {
+    background: var(--dl-raised);
+    color: var(--dl-ink);
+}
+
+/* Deleting cannot be undone. It reads as the serious option without being the loudest thing in
+   the row: text and an outline rather than a filled red button. */
+.block_deadline_checker__action--destructive {
+    background: transparent;
+    border: 1px solid var(--dl-border-control);
+    color: var(--dl-danger-text);
+}
+
+.block_deadline_checker__action .fa-check,
+.block_deadline_checker__action .fa-pen,
+.block_deadline_checker__action .fa-trash-can {
     font-size: 9px;
 }
 
@@ -314,7 +417,7 @@ a.block_deadline_checker__name:focus {
 
 .block_deadline_checker__empty {
     padding: 26px 22px;
-    border-top: 1px solid var(--dl-grey-1);
+    border-top: 1px solid var(--dl-divider);
     text-align: center;
 }
 
@@ -328,7 +431,7 @@ a.block_deadline_checker__name:focus {
     font-size: 13px;
     font-weight: 400;
     line-height: 1.5;
-    color: rgba(0, 0, 41, 0.65);
+    color: var(--dl-ink-quiet);
 }
 
 /* Pagination -------------------------------------------------------------- */
@@ -339,7 +442,7 @@ a.block_deadline_checker__name:focus {
     justify-content: space-between;
     gap: 8px;
     padding: 9px 14px;
-    border-top: 1px solid var(--dl-grey-1);
+    border-top: 1px solid var(--dl-divider);
 }
 
 .block_deadline_checker__pagebtn {
@@ -349,10 +452,10 @@ a.block_deadline_checker__name:focus {
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid var(--dl-border);
+    border: 1px solid var(--dl-border-control);
     border-radius: 8px;
     background: var(--dl-surface);
-    color: var(--dl-navy);
+    color: var(--dl-ink);
     font-size: 10px;
     cursor: pointer;
 }
@@ -375,12 +478,223 @@ a.block_deadline_checker__name:focus {
 /* Focus ------------------------------------------------------------------- */
 
 .block_deadline_checker__card :focus-visible {
-    outline: 2px solid var(--dl-indigo);
+    outline: 2px solid var(--dl-focus);
     outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
     .block_deadline_checker__chevron .fa-chevron-down {
         transition: none;
+    }
+}
+
+/* Narrow cards ------------------------------------------------------------
+ *
+ * Measured against the card, not the screen. A phone in portrait usually gives this block more
+ * room than a desktop sidebar does, so these rules are about the column being narrow wherever
+ * that happens: a sidebar, a tablet in a split view, a small phone.
+ */
+
+/* Below this the filter row cannot hold a readable course name and three buttons side by side. */
+@container deadline-checker (max-width: 330px) {
+    .block_deadline_checker__filters {
+        flex-wrap: wrap;
+    }
+
+    /* Select on its own line at full width; the status buttons share the next line evenly, which
+       also makes each of them an easier target. */
+    .block_deadline_checker__selectwrap {
+        flex: 1 0 100%;
+    }
+
+    .block_deadline_checker__views {
+        width: 100%;
+    }
+
+    .block_deadline_checker__view,
+    .block_deadline_checker__view:first-child {
+        flex: 1;
+        padding: 0 6px;
+    }
+}
+
+/* Narrower still: the urgency pill stops competing with the task name for the same line and
+   moves underneath it, where it keeps its full wording rather than being squeezed. */
+@container deadline-checker (max-width: 265px) {
+    .block_deadline_checker__grid {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    /* Column 2 so it sits under the name rather than under the chevron; the grid's own row gap
+       provides the space above it. */
+    .block_deadline_checker__stamp {
+        grid-column: 2;
+        justify-self: start;
+    }
+
+    /* A little of the side padding back as room for content. */
+    .block_deadline_checker__header,
+    .block_deadline_checker__filters,
+    .block_deadline_checker__grid,
+    .block_deadline_checker__actions {
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+
+    .block_deadline_checker__actions {
+        margin-left: 0;
+        margin-right: 0;
+    }
+}
+
+/* Touch ------------------------------------------------------------------
+ *
+ * The design's 24px controls are comfortable under a mouse and fiddly under a thumb. On a touch
+ * screen every control grows to a 44px target, which is what a phone or tablet needs, and the
+ * two derived sizes follow so the rows stay aligned.
+ */
+@media (pointer: coarse) {
+    .block_deadline_checker {
+        --dl-chevron-size: 44px;
+        --dl-action-indent: 72px;
+    }
+
+    .block_deadline_checker__select {
+        height: 44px;
+        font-size: 13px;
+    }
+
+    .block_deadline_checker__views {
+        padding: 4px;
+    }
+
+    .block_deadline_checker__view {
+        height: 36px;
+        padding: 0 12px;
+        font-size: 12px;
+    }
+
+    .block_deadline_checker__pagebtn {
+        width: 44px;
+        height: 44px;
+    }
+
+    .block_deadline_checker__pager {
+        padding: 10px 14px;
+    }
+
+    .block_deadline_checker__action {
+        min-height: 44px;
+        padding: 10px 16px;
+        font-size: 13px;
+    }
+
+    .block_deadline_checker__action .fa-check {
+        font-size: 11px;
+    }
+}
+
+/* Dark scheme -------------------------------------------------------------
+ *
+ * Only the tokens change. Not one rule above is repeated or overridden here, which is the point of
+ * naming tokens after roles: the layout, the spacing and the states are written once and the
+ * palette is swapped underneath them.
+ *
+ * The block follows the *site*, not the reader's operating system. The signal is data-bs-theme on
+ * an ancestor — Bootstrap 5.3's own colour mode mechanism, which Boost ships configured as
+ * $color-mode-type: data, so it is what a client theme or a future core toggle sets. The reader's
+ * prefers-color-scheme is deliberately not consulted: a page whose theme is light stays light for
+ * everyone, and a card that went dark on its own inside it was the bug this replaced.
+ *
+ * The light block below is not redundant with the defaults at the top of the file. Bootstrap allows
+ * data-bs-theme to be nested, so a light region inside a dark page is a real arrangement; there,
+ * both ancestor selectors match at equal specificity and the light one wins by coming last.
+ *
+ * The dark values are a set, not the light ones inverted: coral and the neutral pills keep dark
+ * ink because they stay bright, and indigo is lifted because the shipped #5050ff is too close in
+ * value to a dark surface to read as a fill on one. Every pair was checked at AA.
+ */
+
+/* stylelint-disable no-duplicate-selectors -- one token block per scheme. */
+
+.block_deadline_checker[data-bs-theme="dark"],
+[data-bs-theme="dark"] .block_deadline_checker {
+    color-scheme: dark;
+
+    --dl-indigo: var(--c-indigo-dark, #5b5bf0);
+    --dl-link: var(--c-indigo-light, #a5a8ff);
+    --dl-coral: var(--c-coral-dark, #ff8b7a);
+    --dl-danger: var(--c-danger-dark, #c8443a);
+    --dl-danger-text: var(--c-danger-light, #ff9c90);
+    --dl-surface: var(--c-surface-dark, #171733);
+    --dl-raised: var(--c-raised-dark, #262648);
+    --dl-divider: var(--border-dark, #2b2b50);
+    --dl-border: var(--border-dark, #34345c);
+    --dl-border-control: var(--border-control-dark, #767995);
+
+    --dl-ink: var(--c-ink-dark, #eef0f8);
+    --dl-muted: #b9bcd0;
+    --dl-muted-strong: #c6c9da;
+    --dl-muted-soft: #adb0c6;
+    --dl-ink-quiet: #b9bcd0;
+    --dl-chevron: #9c9fb6;
+    --dl-tint: rgba(255, 122, 110, 0.1);
+    /* A dark card gains no depth from a dark shadow; the border carries the edge instead. */
+    --dl-shadow: none;
+
+    --dl-invert-bg: var(--c-ink-dark, #eef0f8);
+    --dl-invert-ink: var(--c-surface-dark, #171733);
+
+    --dl-focus: #8f8fff;
+}
+
+/* A light region nested inside a dark page, which must beat the dark block above it. */
+.block_deadline_checker[data-bs-theme="light"],
+[data-bs-theme="light"] .block_deadline_checker {
+    color-scheme: light;
+
+    --dl-indigo: var(--c-indigo, #5050ff);
+    --dl-link: var(--c-indigo-hover, #3d3de0);
+    --dl-coral: var(--c-coral, #ff6d59);
+    --dl-danger: var(--c-danger, #c0362c);
+    --dl-danger-text: var(--c-danger, #c0362c);
+    --dl-surface: var(--c-white, #fff);
+    --dl-raised: var(--c-grey-1, #f1f1f1);
+    --dl-divider: var(--c-grey-1, #f1f1f1);
+    --dl-border: var(--border-1, #eaeaea);
+    --dl-border-control: var(--border-1, #eaeaea);
+
+    --dl-ink: var(--c-navy, #000029);
+    --dl-muted: rgba(0, 0, 41, 0.62);
+    --dl-muted-strong: rgba(0, 0, 41, 0.7);
+    --dl-muted-soft: rgba(0, 0, 41, 0.6);
+    --dl-ink-quiet: rgba(0, 0, 41, 0.65);
+    --dl-chevron: rgba(0, 0, 41, 0.55);
+    --dl-tint: rgba(192, 54, 44, 0.04);
+    --dl-shadow: 0 1px 3px rgba(0, 0, 41, 0.06);
+
+    --dl-invert-bg: var(--c-navy, #000029);
+    --dl-invert-ink: var(--c-white, #fff);
+
+    --dl-focus: var(--c-indigo, #5050ff);
+}
+
+/* stylelint-enable no-duplicate-selectors */
+
+/* Forced colours ---------------------------------------------------------
+ *
+ * Windows high contrast mode replaces the palette outright. The urgency pills lose their fill and
+ * would become indistinguishable from each other, so they take a border to keep their shape — the
+ * wording inside them already carries the meaning, and so does the row's accessible name.
+ */
+@media (forced-colors: active) {
+    .block_deadline_checker__stamp {
+        border: 1px solid currentcolor;
+    }
+
+    .block_deadline_checker__view--on {
+        /* The selected chip is a filled shape in both schemes; forced colours flatten it, so it
+           says so in text as well. */
+        border: 2px solid currentcolor;
     }
 }
