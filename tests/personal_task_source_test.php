@@ -61,11 +61,11 @@ final class personal_task_source_test extends \advanced_testcase {
     }
 
     /**
-     * A deadline with no course is filed under a label of its own rather than a course id.
+     * A personal deadline is filed under a label of its own rather than a course id.
      *
      * The identifier is a word, so it can never collide with a real course id in the filter.
      */
-    public function test_a_deadline_with_no_course_gets_its_own_filter_identifier(): void {
+    public function test_a_personal_deadline_gets_its_own_filter_identifier(): void {
         $this->resetAfterTest();
         $this->setUser($this->getDataGenerator()->create_user());
 
@@ -80,10 +80,12 @@ final class personal_task_source_test extends \advanced_testcase {
     }
 
     /**
-     * A deadline filed under a course carries that course's id, so it groups with the course's own
-     * dates in the filter rather than sitting in a list of its own.
+     * Being enrolled on a course does not put a personal deadline in it.
+     *
+     * The learner's own list stays their own list: it never joins a course's dates in the filter,
+     * whatever they are enrolled on.
      */
-    public function test_a_deadline_in_a_course_uses_the_courses_own_identifier(): void {
+    public function test_an_enrolment_does_not_put_a_deadline_in_a_course(): void {
         $this->resetAfterTest();
 
         $generator = $this->getDataGenerator();
@@ -92,24 +94,23 @@ final class personal_task_source_test extends \advanced_testcase {
         $generator->enrol_user($user->id, $course->id);
         $this->setUser($user);
 
-        personal_task_repository::create('Reflective log 3', time() + DAYSECS, (int) $course->id);
+        personal_task_repository::create('Reflective log 3', time() + DAYSECS);
 
         $tasks = personal_task_source::tasks(time());
         $task = reset($tasks);
 
-        // A string, matching what course_task_source produces, because the browser compares these
-        // by identity.
-        $this->assertSame((string) $course->id, $task->courseid);
-        $this->assertSame('Operational leadership', $task->coursename);
+        $this->assertSame(personal_task_source::NO_COURSE, $task->courseid);
+        $this->assertNotSame((string) $course->id, $task->courseid);
+        $this->assertStringNotContainsString('Operational leadership', $task->coursename);
     }
 
     /**
-     * A deadline outlives the enrolment it was filed under.
+     * A deadline stored back when a course could be chosen stops naming it.
      *
-     * The deadline is still the learner's, so it is still shown — but it stops naming a course they
-     * can no longer see, which would be telling them about a course they have lost access to.
+     * The row keeps its old courseid — nothing rewrites it — but the read path ignores it, so an
+     * old deadline behaves like every other personal one rather than being the odd row out.
      */
-    public function test_a_deadline_stops_naming_a_course_the_learner_has_left(): void {
+    public function test_a_course_stored_before_the_field_was_removed_is_ignored(): void {
         global $DB;
 
         $this->resetAfterTest();
@@ -120,13 +121,9 @@ final class personal_task_source_test extends \advanced_testcase {
         $generator->enrol_user($user->id, $course->id);
         $this->setUser($user);
 
-        personal_task_repository::create('Reflective log 3', time() + DAYSECS, (int) $course->id);
-
-        // Off the course, but the deadline stays.
-        $manual = enrol_get_plugin('manual');
-        $instance = $DB->get_record('enrol',
-            ['courseid' => $course->id, 'enrol' => 'manual'], '*', MUST_EXIST);
-        $manual->unenrol_user($instance, $user->id);
+        $id = personal_task_repository::create('Reflective log 3', time() + DAYSECS);
+        // The row as it would have been written before the course field went away.
+        $DB->set_field(personal_task_repository::TABLE, 'courseid', $course->id, ['id' => $id]);
 
         $tasks = personal_task_source::tasks(time());
 

@@ -19,7 +19,6 @@ declare(strict_types=1);
 namespace block_deadline_checker;
 
 use context_course;
-use stdClass;
 
 /**
  * The deadlines a learner has added for themselves, read back for display.
@@ -29,6 +28,11 @@ use stdClass;
  * pills, accessible names, paging — treats both kinds of deadline identically. The one difference
  * a task carries is its personal row id, which is what lets the block offer Edit and Delete on
  * these and not on a course's own dates.
+ *
+ * A deadline a learner wrote for themselves belongs to no course, so every one of these reports the
+ * same filter identifier and groups together. Rows written before the course field was removed may
+ * still carry a courseid; it is not read, so an old deadline stops naming a course rather than
+ * being the one row that behaves differently from the rest.
  *
  * @package    block_deadline_checker
  * @copyright  2026 Accipio
@@ -68,21 +72,15 @@ class personal_task_source {
             return [];
         }
 
-        $names = self::course_names($records, $userid);
+        $nocourse = get_string('nocourse', 'block_deadline_checker');
         $tasks = [];
 
         foreach ($records as $record) {
-            $courseid = (int) $record->courseid;
-            // A course they have since left, or one that has been deleted: the deadline is still
-            // theirs and still shown, it just stops claiming to belong anywhere. Falling back to
-            // the course name would mean naming a course they can no longer see.
-            $filed = $courseid > 0 && isset($names[$courseid]);
-
             $tasks[] = new task(
                 'p' . (int) $record->id,
                 format_string($record->name, true, ['context' => context_course::instance(SITEID)]),
-                $filed ? (string) $courseid : self::NO_COURSE,
-                $filed ? $names[$courseid] : get_string('nocourse', 'block_deadline_checker'),
+                self::NO_COURSE,
+                $nocourse,
                 (int) $record->due,
                 calendar_days::between($now, (int) $record->due),
                 (int) $record->timecompleted > 0,
@@ -96,50 +94,5 @@ class personal_task_source {
         }
 
         return $tasks;
-    }
-
-    /**
-     * Display names for the courses these deadlines are filed under.
-     *
-     * Only courses the learner is still on and still allowed to see are named, which is what
-     * decides whether a deadline shows a course at all.
-     *
-     * @param stdClass[] $records Stored deadlines.
-     * @param int $userid Learner's id.
-     * @return string[] Course name keyed by course id; courses they cannot see are absent.
-     */
-    protected static function course_names(array $records, int $userid): array {
-        $wanted = [];
-
-        foreach ($records as $record) {
-            if ((int) $record->courseid > 0) {
-                $wanted[(int) $record->courseid] = true;
-            }
-        }
-
-        if (empty($wanted)) {
-            return [];
-        }
-
-        $names = [];
-
-        // Their enrolments, not the course table: a deadline filed under a course they have left
-        // must not keep naming it.
-        foreach (enrol_get_all_users_courses($userid, true, ['id', 'fullname', 'visible']) as $course) {
-            if (!isset($wanted[$course->id])) {
-                continue;
-            }
-
-            $context = context_course::instance($course->id);
-
-            if (!$course->visible &&
-                    !has_capability('moodle/course:viewhiddencourses', $context, $userid)) {
-                continue;
-            }
-
-            $names[(int) $course->id] = format_string($course->fullname, true, ['context' => $context]);
-        }
-
-        return $names;
     }
 }

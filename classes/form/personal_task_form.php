@@ -20,10 +20,10 @@ namespace block_deadline_checker\form;
 
 use block_deadline_checker\personal_task_repository;
 use context;
-use context_course;
 use context_system;
 use core_form\dynamic_form;
 use core_text;
+use HTML_QuickForm_select;
 use moodle_url;
 
 /**
@@ -34,6 +34,10 @@ use moodle_url;
  * that actually protect the database live in {@see personal_task_repository}, which this calls
  * into rather than writing anything itself.
  *
+ * A deadline written here is the learner's own and belongs to nobody else, so there is nothing to
+ * choose but what to call it and when it is due. There is deliberately no course to file it under:
+ * a course's dates belong to the course, and the block reads those from the calendar instead.
+ *
  * @package    block_deadline_checker
  * @copyright  2026 Accipio
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -41,10 +45,28 @@ use moodle_url;
 class personal_task_form extends dynamic_form {
 
     /**
+     * How many options the date and time lists show at once.
+     *
+     * A select carrying a size renders as a short scrolling list rather than a dropdown, which is
+     * what keeps every minute reachable without sixty of them unrolling down the screen. Five is
+     * enough to see where you are in the list and small enough that five of these side by side
+     * still fit in the modal.
+     *
+     * @var int
+     */
+    private const VISIBLE_OPTIONS = 5;
+
+    /**
      * Build the form.
      */
     protected function definition(): void {
         $mform = $this->_form;
+
+        // Everything this form's stylesheet does is scoped under this class, so the scrolling date
+        // lists below stay this form's business and no other date selector on the site changes.
+        $mform->updateAttributes([
+            'class' => trim((string) $mform->getAttribute('class') . ' block_deadline_checker__form'),
+        ]);
 
         $mform->addElement('hidden', 'id');
         $mform->setType('id', PARAM_INT);
@@ -57,16 +79,40 @@ class personal_task_form extends dynamic_form {
                         'required', null, 'client');
         $mform->addHelpButton('name', 'deadlinename', 'block_deadline_checker');
 
+        // Every minute stays selectable — core's default step of one is left alone — but the lists
+        // are turned into short scrollers below rather than dropdowns, so sixty minutes and eighty
+        // years no longer unroll down the screen.
         $mform->addElement('date_time_selector', 'due',
                            get_string('deadlinedue', 'block_deadline_checker'));
         $mform->addRule('due', get_string('errorduerequired', 'block_deadline_checker'),
                         'required', null, 'client');
 
-        $mform->addElement('select', 'courseid', get_string('deadlinecourse', 'block_deadline_checker'),
-                           $this->course_options());
-        $mform->setType('courseid', PARAM_INT);
-        $mform->setDefault('courseid', 0);
-        $mform->addHelpButton('courseid', 'deadlinecourse', 'block_deadline_checker');
+        self::make_lists_scroll($mform->getElement('due'));
+    }
+
+    /**
+     * Turn a date and time selector's dropdowns into short scrolling lists.
+     *
+     * A select with a size attribute is a list box: the browser shows that many rows and scrolls
+     * the rest, keeping every option selectable and the keyboard behaviour a select already has.
+     * Nothing is removed, so this costs the form no functionality at all.
+     *
+     * Only the size is set here. A class cannot be: core's select template writes its own class
+     * attribute before it prints anything an element carries, and the first class attribute is the
+     * one a browser keeps. The stylesheet therefore hangs off the class on the form instead, which
+     * is also what keeps these rules away from every other date selector on the site.
+     *
+     * @param object $group The date_time_selector, which is a group of selects.
+     */
+    private static function make_lists_scroll(object $group): void {
+        foreach ($group->getElements() as $element) {
+            // Optional selectors add an enabling checkbox to the group, which is not a list.
+            if (!$element instanceof HTML_QuickForm_select) {
+                continue;
+            }
+
+            $element->updateAttributes(['size' => self::VISIBLE_OPTIONS]);
+        }
     }
 
     /**
@@ -99,25 +145,6 @@ class personal_task_form extends dynamic_form {
     }
 
     /**
-     * Courses the learner may file a deadline under: the ones they are actually on.
-     *
-     * @return string[] Course id => name, with 0 for no course at all.
-     */
-    protected function course_options(): array {
-        global $USER;
-
-        $options = [0 => get_string('nocourse', 'block_deadline_checker')];
-
-        foreach (enrol_get_all_users_courses((int) $USER->id, true, ['id', 'fullname']) as $course) {
-            $options[(int) $course->id] = format_string($course->fullname, true, [
-                'context' => context_course::instance($course->id),
-            ]);
-        }
-
-        return $options;
-    }
-
-    /**
      * Where the form's permissions are judged.
      *
      * The system context, matching the capability: a personal deadline list is not a thing that
@@ -147,7 +174,7 @@ class personal_task_form extends dynamic_form {
 
         if ($id <= 0) {
             // Adding. Default to the end of today, which is what most deadlines turn out to be.
-            $this->set_data(['id' => 0, 'courseid' => 0, 'due' => usergetmidnight(time()) + DAYSECS - MINSECS]);
+            $this->set_data(['id' => 0, 'due' => usergetmidnight(time()) + DAYSECS - MINSECS]);
             return;
         }
 
@@ -157,7 +184,6 @@ class personal_task_form extends dynamic_form {
             'id' => (int) $existing->id,
             'name' => $existing->name,
             'due' => (int) $existing->due,
-            'courseid' => (int) $existing->courseid,
         ]);
     }
 
@@ -171,12 +197,11 @@ class personal_task_form extends dynamic_form {
 
         $data = $this->get_data();
         $id = (int) ($data->id ?? 0);
-        $courseid = empty($data->courseid) ? null : (int) $data->courseid;
 
         if ($id > 0) {
-            personal_task_repository::update($id, (string) $data->name, (int) $data->due, $courseid);
+            personal_task_repository::update($id, (string) $data->name, (int) $data->due);
         } else {
-            $id = personal_task_repository::create((string) $data->name, (int) $data->due, $courseid);
+            $id = personal_task_repository::create((string) $data->name, (int) $data->due);
         }
 
         return ['id' => $id];

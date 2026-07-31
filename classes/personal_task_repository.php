@@ -38,6 +38,10 @@ use stdClass;
  * Course deadlines are not writable through this class and never will be: they belong to the
  * course, and Moodle already gives teachers the activity settings to change them.
  *
+ * A deadline written here belongs to one learner and to nothing else. It cannot be filed under a
+ * course: the courseid column is retained only for rows written before that was removed, is never
+ * set by this class, and is ignored on the way back out by {@see personal_task_source}.
+ *
  * @package    block_deadline_checker
  * @copyright  2026 Accipio
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -58,11 +62,10 @@ class personal_task_repository {
      *
      * @param string $name What to call it.
      * @param int $due Due date as a unix timestamp.
-     * @param int|null $courseid Course to file it under, or null for none.
      * @param int|null $userid Owner; defaults to the current user.
      * @return int The new row's id.
      */
-    public static function create(string $name, int $due, ?int $courseid = null, ?int $userid = null): int {
+    public static function create(string $name, int $due, ?int $userid = null): int {
         global $DB;
 
         $userid = self::owner($userid);
@@ -74,7 +77,7 @@ class personal_task_repository {
 
         return (int) $DB->insert_record(self::TABLE, (object) [
             'userid' => $userid,
-            'courseid' => self::validate_course($courseid, $userid),
+            'courseid' => null,
             'name' => self::validate_name($name),
             'due' => self::validate_due($due),
             'timecompleted' => 0,
@@ -92,20 +95,19 @@ class personal_task_repository {
      * @param int $id Row id.
      * @param string $name What to call it.
      * @param int $due Due date as a unix timestamp.
-     * @param int|null $courseid Course to file it under, or null for none.
      * @param int|null $userid Owner; defaults to the current user.
      */
-    public static function update(int $id, string $name, int $due, ?int $courseid = null,
-                                  ?int $userid = null): void {
+    public static function update(int $id, string $name, int $due, ?int $userid = null): void {
         global $DB;
 
         $userid = self::owner($userid);
         // Throws before anything is written if the row is not theirs.
         $existing = self::get_own($id, $userid);
 
+        // courseid is deliberately absent, so editing an old row neither sets a course nor discards
+        // what a learner recorded before the field went away. Either way nothing reads it.
         $DB->update_record(self::TABLE, (object) [
             'id' => $existing->id,
-            'courseid' => self::validate_course($courseid, $userid),
             'name' => self::validate_name($name),
             'due' => self::validate_due($due),
             'timemodified' => time(),
@@ -261,27 +263,5 @@ class personal_task_repository {
         }
 
         return $due;
-    }
-
-    /**
-     * Check that a learner may file a deadline under a course.
-     *
-     * Only courses they are actually on, so the block cannot be used to find out whether a course
-     * exists, and a deadline cannot be filed somewhere its owner will never see it.
-     *
-     * @param int|null $courseid Course id, 0 or null for none.
-     * @param int $userid Owner.
-     * @return int|null Course id, or null for none.
-     */
-    protected static function validate_course(?int $courseid, int $userid): ?int {
-        if (empty($courseid)) {
-            return null;
-        }
-
-        if (!array_key_exists($courseid, enrol_get_all_users_courses($userid, true, ['id']))) {
-            throw new moodle_exception('errorcoursenotyours', 'block_deadline_checker');
-        }
-
-        return $courseid;
     }
 }

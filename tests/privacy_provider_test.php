@@ -101,6 +101,8 @@ final class privacy_provider_test extends \core_privacy\tests\provider_testcase 
      * A learner's export contains their deadlines and nobody else's.
      */
     public function test_export_returns_the_learners_own_deadlines(): void {
+        global $DB;
+
         $this->resetAfterTest();
 
         $generator = $this->getDataGenerator();
@@ -110,8 +112,12 @@ final class privacy_provider_test extends \core_privacy\tests\provider_testcase 
         $generator->enrol_user($owner->id, $course->id);
 
         $this->setUser($owner);
-        personal_task_repository::create('Reflective log 3', time() + DAYSECS, (int) $course->id);
+        $filed = personal_task_repository::create('Reflective log 3', time() + DAYSECS);
         personal_task_repository::create('Ring the assessor', time() + 2 * DAYSECS);
+
+        // A deadline cannot be filed under a course any more, but rows written before that was
+        // removed still carry one and the export has to keep reporting what is actually stored.
+        $DB->set_field(personal_task_repository::TABLE, 'courseid', $course->id, ['id' => $filed]);
 
         $this->setUser($other);
         personal_task_repository::create('Theirs', time() + DAYSECS);
@@ -127,7 +133,7 @@ final class privacy_provider_test extends \core_privacy\tests\provider_testcase 
         $this->assertEqualsCanonicalizing(['Reflective log 3', 'Ring the assessor'], $names);
         $this->assertNotContains('Theirs', $names);
 
-        // The course is named, and the one filed under no course says so rather than being blank.
+        // A stored course is still named, and the deadline with none says so rather than being blank.
         $courses = array_map(fn($d) => $d->course, $data->deadlines);
         $this->assertContains('Operational leadership', $courses);
         $this->assertContains(get_string('nocourse', 'block_deadline_checker'), $courses);

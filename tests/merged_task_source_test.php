@@ -58,7 +58,7 @@ final class merged_task_source_test extends \advanced_testcase {
             'completion' => COMPLETION_TRACKING_MANUAL,
         ]);
 
-        personal_task_repository::create('Ring the assessor', $due + DAYSECS, (int) $course->id);
+        personal_task_repository::create('Ring the assessor', $due + DAYSECS);
 
         $tasks = merged_task_source::tasks($now);
 
@@ -81,8 +81,10 @@ final class merged_task_source_test extends \advanced_testcase {
         $this->assertNotNull($byname['Ring the assessor']->personalid);
         $this->assertNull($byname['Ring the assessor']->cmid);
 
-        // Filed under the same course, so the filter groups them rather than splitting them.
-        $this->assertSame($byname['Reflective log 3']->courseid, $byname['Ring the assessor']->courseid);
+        // The two are filtered apart on purpose: the course owns its date, whereas the learner's
+        // own deadline belongs to them and to no course, however many courses they are on.
+        $this->assertSame((string) $course->id, $byname['Reflective log 3']->courseid);
+        $this->assertSame(personal_task_source::NO_COURSE, $byname['Ring the assessor']->courseid);
     }
 
     /**

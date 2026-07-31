@@ -139,9 +139,12 @@ final class personal_task_repository_test extends \advanced_testcase {
     }
 
     /**
-     * A deadline can be filed under a course the learner is on.
+     * A deadline is the learner's own and belongs to no course, even when they are enrolled on one.
+     *
+     * Being enrolled is what used to make a course offerable, so it is the condition worth proving
+     * changes nothing now: there is no argument to pass and nothing is stored.
      */
-    public function test_create_accepts_a_course_the_learner_is_enrolled_on(): void {
+    public function test_create_never_files_a_deadline_under_a_course(): void {
         $this->resetAfterTest();
 
         $generator = $this->getDataGenerator();
@@ -150,26 +153,9 @@ final class personal_task_repository_test extends \advanced_testcase {
         $generator->enrol_user($user->id, $course->id);
         $this->setUser($user);
 
-        $id = personal_task_repository::create('Reflective log 3', time() + DAYSECS, (int) $course->id);
+        $id = personal_task_repository::create('Reflective log 3', time() + DAYSECS);
 
-        $this->assertSame((int) $course->id, (int) personal_task_repository::get_own($id)->courseid);
-    }
-
-    /**
-     * A deadline cannot be filed under a course the learner is not on.
-     *
-     * Both because it would end up somewhere they never look, and because being able to attach a
-     * row to any id would say whether that course exists.
-     */
-    public function test_create_refuses_a_course_the_learner_is_not_on(): void {
-        $this->resetAfterTest();
-
-        $generator = $this->getDataGenerator();
-        $elsewhere = $generator->create_course();
-        $this->setUser($generator->create_user());
-
-        $this->expectException(moodle_exception::class);
-        personal_task_repository::create('Reflective log 3', time() + DAYSECS, (int) $elsewhere->id);
+        $this->assertNull(personal_task_repository::get_own($id)->courseid);
     }
 
     /**
@@ -178,28 +164,28 @@ final class personal_task_repository_test extends \advanced_testcase {
     public function test_update_changes_the_deadline(): void {
         $this->resetAfterTest();
 
-        $generator = $this->getDataGenerator();
-        $course = $generator->create_course(['fullname' => 'Operational leadership']);
-        $user = $generator->create_user();
-        $generator->enrol_user($user->id, $course->id);
+        $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
 
         $id = personal_task_repository::create('Draft', time() + DAYSECS);
         $newdue = time() + 9 * DAYSECS;
 
-        personal_task_repository::update($id, 'Reflective log 3', $newdue, (int) $course->id);
+        personal_task_repository::update($id, 'Reflective log 3', $newdue);
 
         $record = personal_task_repository::get_own($id);
         $this->assertSame('Reflective log 3', $record->name);
         $this->assertSame($newdue, (int) $record->due);
-        $this->assertSame((int) $course->id, (int) $record->courseid);
         $this->assertSame((int) $user->id, (int) $record->userid);
     }
 
     /**
-     * Editing can put a deadline back to belonging to no course.
+     * Editing a deadline written back when a course could be chosen leaves that course in the row
+     * rather than quietly discarding it. Nothing reads it either way, so this is about not
+     * destroying what a learner recorded, not about the course meaning anything any more.
      */
-    public function test_update_can_clear_the_course(): void {
+    public function test_update_leaves_a_course_stored_before_the_field_was_removed_alone(): void {
+        global $DB;
+
         $this->resetAfterTest();
 
         $generator = $this->getDataGenerator();
@@ -208,10 +194,13 @@ final class personal_task_repository_test extends \advanced_testcase {
         $generator->enrol_user($user->id, $course->id);
         $this->setUser($user);
 
-        $id = personal_task_repository::create('Reflective log 3', time() + DAYSECS, (int) $course->id);
-        personal_task_repository::update($id, 'Reflective log 3', time() + DAYSECS, null);
+        $id = personal_task_repository::create('Draft', time() + DAYSECS);
+        // The row as it would have been written before the course field went away.
+        $DB->set_field(personal_task_repository::TABLE, 'courseid', $course->id, ['id' => $id]);
 
-        $this->assertNull(personal_task_repository::get_own($id)->courseid);
+        personal_task_repository::update($id, 'Reflective log 3', time() + 9 * DAYSECS);
+
+        $this->assertSame((int) $course->id, (int) personal_task_repository::get_own($id)->courseid);
     }
 
     /**

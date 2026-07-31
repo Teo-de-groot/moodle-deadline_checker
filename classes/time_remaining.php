@@ -72,13 +72,13 @@ class time_remaining {
             if ($seconds <= 0) {
                 return self::pill(get_string('duenow', 'block_deadline_checker'), self::VARIANT_OVERDUE, true);
             }
-            if ($seconds < HOURSECS) {
+
+            $hours = self::hours_left($seconds);
+
+            if ($hours < 1) {
                 return self::pill(get_string('lessthanonehour', 'block_deadline_checker'), self::VARIANT_URGENT, false);
             }
 
-            // Floored, never rounded: 1 hour 59 minutes is "1h left", and 12 minutes must
-            // never present itself as an hour.
-            $hours = intdiv($seconds, HOURSECS);
             return self::pill(get_string('hoursleft', 'block_deadline_checker', $hours), self::VARIANT_URGENT, false);
         }
 
@@ -113,11 +113,13 @@ class time_remaining {
             if ($seconds <= 0) {
                 return get_string('stateduenow', 'block_deadline_checker');
             }
-            if ($seconds < HOURSECS) {
+
+            $hours = self::hours_left($seconds);
+
+            if ($hours < 1) {
                 return get_string('statesubhour', 'block_deadline_checker');
             }
 
-            $hours = intdiv($seconds, HOURSECS);
             return $hours === 1
                 ? get_string('statehourleft', 'block_deadline_checker')
                 : get_string('statehoursleft', 'block_deadline_checker', $hours);
@@ -126,6 +128,27 @@ class time_remaining {
         return $task->daydiff === 1
             ? get_string('statedueinoneday', 'block_deadline_checker')
             : get_string('stateduein', 'block_deadline_checker', $task->daydiff);
+    }
+
+    /**
+     * Whole hours left, to the nearest hour, with exactly half an hour rounding up.
+     *
+     * The pill and the spoken state both come through here, so the two can never disagree about
+     * the same deadline.
+     *
+     * Rounded rather than floored, because floored reads as wrong to the person waiting: at 15:19
+     * a 17:00 deadline has 1h41m left, and "1h left" undersells it by most of an hour. Zero means
+     * under half an hour is left, which the callers word for themselves rather than say "0h".
+     *
+     * Capped at 23. This only ever describes a deadline due today, and a pill saying "24h left"
+     * next to a row that says due today contradicts itself; that needs a deadline late tonight
+     * being looked at just after midnight, which is rare but not impossible.
+     *
+     * @param int $seconds Seconds until the deadline. Positive; callers handle the passed moment.
+     * @return int Whole hours, 0 when under half an hour is left.
+     */
+    private static function hours_left(int $seconds): int {
+        return min((int) round($seconds / HOURSECS), 23);
     }
 
     /**

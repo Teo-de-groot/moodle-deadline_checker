@@ -48,13 +48,9 @@ final class external_test extends \advanced_testcase {
     public function test_get_tasks_returns_a_payload_matching_its_declared_structure(): void {
         $this->resetAfterTest();
 
-        $generator = $this->getDataGenerator();
-        $course = $generator->create_course(['fullname' => 'Operational leadership']);
-        $user = $generator->create_user();
-        $generator->enrol_user($user->id, $course->id);
-        $this->setUser($user);
+        $this->setUser($this->getDataGenerator()->create_user());
 
-        personal_task_repository::create('Ring the assessor', time() + DAYSECS, (int) $course->id);
+        personal_task_repository::create('Ring the assessor', time() + DAYSECS);
 
         $result = external_api::clean_returnvalue(
             get_tasks::execute_returns(),

@@ -75,7 +75,8 @@ final class sample_task_source_test extends \advanced_testcase {
             $this->assertContains($variant, $bands, "No sample task lands in the {$variant} band");
         }
 
-        // The sub-hour case: about forty minutes out, so the pill reads "<1 hour".
+        // The sub-hour case: twenty minutes out, so the pill reads "<1 hour" rather than rounding
+        // up to an hour.
         $quiz = array_values(array_filter($tasks, fn(task $t) => $t->id === 't3'))[0];
         $this->assertSame('<1 hour', time_remaining::stamp($quiz, $now)['text']);
 

@@ -82,6 +82,39 @@
     --dl-action-indent: 48px;
 }
 
+/* The add and edit form ---------------------------------------------------
+ *
+ * The modal is rendered by core outside this block's DOM, so these rules are scoped to the class
+ * the form puts on its own <form> element rather than to the card. Nothing here may leak to the
+ * date selectors on the rest of the site.
+ *
+ * The date and time parts carry size="5", which makes a select a list box instead of a dropdown:
+ * every minute of the hour and every year is still selectable, five show at a time and the rest
+ * scroll. That is the whole point — no options were taken away to shorten the list.
+ */
+
+.block_deadline_checker__form select[size] {
+    /* form-select draws a dropdown caret, which a list box has no use for. */
+    background-image: none;
+    padding-right: 0.5rem;
+    /* Wide enough for the longest label in each list, no wider. */
+    width: auto;
+    min-width: 4rem;
+    /* The five lists sit on one row and must agree about where their tops are. */
+    vertical-align: top;
+    overflow-y: auto;
+}
+
+/* The lists are the tallest thing in the row, so the row wraps rather than overflows on a narrow
+   screen or at a large text size. */
+.block_deadline_checker__form .fdate_time_selector,
+.block_deadline_checker__form .fdate_selector {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 6px;
+}
+
 /* The block supplies its own card, so the theme's block chrome steps back. */
 .block_deadline_checker.block {
     background: transparent;
@@ -121,6 +154,38 @@
 
 .block_deadline_checker__headings {
     min-width: 0;
+}
+
+/* The header's controls, which stay together on their own line whatever the heading does. */
+.block_deadline_checker__headeractions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: none;
+}
+
+/* Icon only, so it takes no width from the heading. The icon is decorative and the button carries
+   its meaning in an accessible name the browser rewrites as the scheme changes. */
+.block_deadline_checker__scheme {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    flex: none;
+    padding: 0;
+    border: 1px solid var(--dl-border-control);
+    border-radius: var(--dl-r-control);
+    background: transparent;
+    color: var(--dl-muted-strong);
+    font-size: 11px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.block_deadline_checker__scheme:hover {
+    border-color: var(--dl-indigo);
+    color: var(--dl-ink);
 }
 
 .block_deadline_checker__add {
@@ -577,6 +642,12 @@ a.block_deadline_checker__name:focus {
     .block_deadline_checker__pagebtn {
         width: 44px;
         height: 44px;
+    }
+
+    .block_deadline_checker__scheme {
+        width: 44px;
+        height: 44px;
+        font-size: 14px;
     }
 
     .block_deadline_checker__pager {

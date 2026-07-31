@@ -81,10 +81,11 @@ class sample_task_source {
 
         $tasks = [];
         foreach ($rows as [$id, $namekey, $courseid, $days, $time, $complete]) {
-            // The quiz has no fixed time: it is always about forty minutes out, which is the
-            // handoff's sub-hour test case.
+            // The quiz has no fixed time: it is always twenty minutes out, which is the handoff's
+            // sub-hour test case. Under half an hour rather than the forty minutes it used to be,
+            // because the pill rounds to the nearest hour and forty minutes now reads "1h left".
             $due = $time === null
-                ? $now + 40 * MINSECS
+                ? $now + 20 * MINSECS
                 : self::at($now, $days, $time);
 
             $tasks[] = new task(

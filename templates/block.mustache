@@ -30,6 +30,8 @@
     * canadd bool Whether this learner may add deadlines of their own
     * addlabel string Label for the add control
     * addaria string Accessible name for the add control
+    * schemetodark string Accessible name for the scheme control while the card is light
+    * schemetolight string Accessible name for the scheme control while the card is dark
     * filterlabel string Visually hidden label for the course select
     * allcourses string Label for the unfiltered option
     * statuslabel string Accessible name for the status button group
@@ -46,6 +48,8 @@
         "canadd": true,
         "addlabel": "Add",
         "addaria": "Add a deadline of my own",
+        "schemetodark": "Switch this block to dark mode",
+        "schemetolight": "Switch this block to light mode",
         "filterlabel": "Filter by course",
         "allcourses": "All courses",
         "statuslabel": "Task status",
@@ -86,16 +90,30 @@
             <h2 class="block_deadline_checker__title" id="{{blockid}}-title">{{title}}</h2>
             <p class="block_deadline_checker__summary" data-region="summary">{{summary}}</p>
         </div>
-        {{#canadd}}
-            {{! Sits in the header rather than under the list, so it is reachable without paging
-                to the end and stays put when the list is re-rendered. }}
+        <div class="block_deadline_checker__headeractions">
+            {{! Starts describing the switch to dark, which is what it does on a light page. The
+                browser corrects both the label and the pressed state on startup once it knows
+                which scheme the card is actually in, and again on every press. }}
             <button type="button"
-                    class="block_deadline_checker__add"
-                    data-action="add"
-                    aria-label="{{addaria}}">
-                <i class="fa-solid fa-plus" aria-hidden="true"></i>{{addlabel}}
+                    class="block_deadline_checker__scheme"
+                    data-action="scheme"
+                    data-label-dark="{{schemetodark}}"
+                    data-label-light="{{schemetolight}}"
+                    aria-pressed="false"
+                    aria-label="{{schemetodark}}">
+                <i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i>
             </button>
-        {{/canadd}}
+            {{#canadd}}
+                {{! Sits in the header rather than under the list, so it is reachable without paging
+                    to the end and stays put when the list is re-rendered. }}
+                <button type="button"
+                        class="block_deadline_checker__add"
+                        data-action="add"
+                        aria-label="{{addaria}}">
+                    <i class="fa-solid fa-plus" aria-hidden="true"></i>{{addlabel}}
+                </button>
+            {{/canadd}}
+        </div>
     </div>
 
     <div class="block_deadline_checker__filters">

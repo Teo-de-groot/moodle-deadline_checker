@@ -85,6 +85,10 @@ class deadlines implements renderable, templatable {
             'canadd' => $this->canadd,
             'addlabel' => get_string('adddeadline', 'block_deadline_checker'),
             'addaria' => get_string('adddeadlinearia', 'block_deadline_checker'),
+            // Both wordings go out with the page: the browser swaps the label when the learner
+            // flips the scheme, and it must not have to fetch a string to do it.
+            'schemetodark' => get_string('schemetodark', 'block_deadline_checker'),
+            'schemetolight' => get_string('schemetolight', 'block_deadline_checker'),
             'filterlabel' => get_string('filterbycourse', 'block_deadline_checker'),
             'allcourses' => get_string('allcourses', 'block_deadline_checker'),
             'statuslabel' => get_string('taskstatus', 'block_deadline_checker'),

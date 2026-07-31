@@ -78,11 +78,21 @@ final class time_remaining_test extends \advanced_testcase {
             'due today, moment passed' => [0, -HOURSECS, false, 'Due now', 'overdue', true],
             'due today, exactly now' => [0, 0, false, 'Due now', 'overdue', true],
             'due today, one minute left' => [0, MINSECS, false, '<1 hour', 'urgent', false],
-            'due today, forty minutes left' => [0, 40 * MINSECS, false, '<1 hour', 'urgent', false],
-            'due today, fifty nine minutes' => [0, 59 * MINSECS, false, '<1 hour', 'urgent', false],
+            // Rounded to the nearest hour, and exactly half an hour rounds up. These four are the
+            // boundary either side of that.
+            'due today, twenty nine minutes' => [0, 29 * MINSECS, false, '<1 hour', 'urgent', false],
+            'due today, exactly half an hour rounds up' => [0, 30 * MINSECS, false, '1h left', 'urgent', false],
+            'due today, forty minutes rounds up' => [0, 40 * MINSECS, false, '1h left', 'urgent', false],
             'due today, exactly one hour' => [0, HOURSECS, false, '1h left', 'urgent', false],
-            'due today, floors not rounds' => [0, HOURSECS + 59 * MINSECS, false, '1h left', 'urgent', false],
+            'due today, one hour twenty nine rounds down' => [0, HOURSECS + 29 * MINSECS, false, '1h left', 'urgent',
+                false],
+            'due today, one hour thirty rounds up' => [0, HOURSECS + 30 * MINSECS, false, '2h left', 'urgent', false],
+            // The case that prompted the change: 15:19 with a 17:00 deadline is 1h41m, not "1h".
+            'due today, one hour forty one' => [0, HOURSECS + 41 * MINSECS, false, '2h left', 'urgent', false],
             'due today, five hours' => [0, 5 * HOURSECS, false, '5h left', 'urgent', false],
+            // Never 24h, which would contradict the row saying the deadline is due today.
+            'due today, late tonight seen after midnight' => [0, 23 * HOURSECS + 50 * MINSECS, false, '23h left',
+                'urgent', false],
             'tomorrow' => [1, 16 * HOURSECS, false, '1 day', 'soon', false],
             'three days' => [3, 3 * DAYSECS, false, '3 days', 'soon', false],
             'four days drops to neutral' => [4, 4 * DAYSECS, false, '4 days', 'far', false],
@@ -113,8 +123,11 @@ final class time_remaining_test extends \advanced_testcase {
             'overdue by one day' => [-1, -DAYSECS, false, 'overdue by 1 day'],
             'overdue by three days' => [-3, -3 * DAYSECS, false, 'overdue by 3 days'],
             'moment passed' => [0, -HOURSECS, false, 'due now, today'],
-            'under an hour' => [0, 40 * MINSECS, false, 'due today, less than 1 hour left'],
+            'under half an hour' => [0, 29 * MINSECS, false, 'due today, less than 1 hour left'],
+            // Spoken and shown must agree: the pill rounds these the same way.
+            'exactly half an hour rounds up' => [0, 30 * MINSECS, false, 'due today, 1 hour left'],
             'one hour' => [0, HOURSECS, false, 'due today, 1 hour left'],
+            'one hour forty one rounds up' => [0, HOURSECS + 41 * MINSECS, false, 'due today, 2 hours left'],
             'five hours' => [0, 5 * HOURSECS, false, 'due today, 5 hours left'],
             'tomorrow' => [1, 16 * HOURSECS, false, 'due in 1 day'],
             'eight days' => [8, 8 * DAYSECS, false, 'due in 8 days'],
